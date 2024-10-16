@@ -15,14 +15,38 @@
 #include "proc.h"
 #include "x86.h"
 
+// define arrow
+#define UP_ARROW 0xE2
+#define DN_ARROW 0xE3
+#define LFARROW 0xE4
+#define RTARROW 0xE5
+#define FORWARD 1
+#define BACKWARD 0
+#define NUMCOL 80
+#define NUMROW 25
+#define INPUT_BUF 128
+
+struct {
+  char buf[INPUT_BUF];
+  uint r;  // Read index
+  uint w;  // Write index
+  uint e;  // Edit index
+  // uint end; // End index
+} input;
+
+// static voids
 static void consputc(int);
 
+// static variables
 static int panicked = 0;
+static int cap = 0;
+
 
 static struct {
   struct spinlock lock;
   int locking;
 } cons;
+
 
 static void
 printint(int xx, int base, int sign)
@@ -126,85 +150,140 @@ panic(char *s)
 //PAGEBREAK: 50
 #define BACKSPACE 0x100
 #define CRTPORT 0x3d4
-#define RIGHT_ARROW 0xE04B
-#define LEFT_ARROW 0xE4
 static ushort *crt = (ushort*)P2V(0xb8000);  // CGA memory
+
+// shift forward crt
+void shift_forward_crt(int pos)
+{
+  for (int i = pos + cap; i > pos; i--)
+    crt[i] = crt[i - 1];
+}
+
+// shift backward crt
+void shift_back_crt(int pos)
+{
+  for (int i = pos - 1; i < pos + cap; i++)
+    crt[i] = crt[i+1];
+}
+
+static int findPos()
+{
+  int pos;
+
+  outb(CRTPORT, 14);
+  pos = inb(CRTPORT + 1) << 8;
+  outb(CRTPORT, 15);
+  pos |= inb(CRTPORT + 1);
+  return pos;
+}
+
+static void goLeft(){
+  
+  int pos = findPos();
+  int first_write_index = NUMCOL * ((int) pos / NUMCOL) + 2;
+
+  if(pos >= first_write_index  && crt[pos - 2] != ('$' | 0x0700))
+  {
+    pos--;
+  }
+  if (pos+1 >= first_write_index)
+  {
+    cap++;
+  }
+  makeChangeInPos(pos);
+}
+
+static void goRight()
+{
+  int pos = findPos();
+
+  int last_index_line = ((((int) pos / NUMCOL) + 1) * NUMCOL - 1);
+
+  if ((pos < last_index_line) && (cap > 0))
+  {
+    pos++;
+    cap--;
+  }
+  makeChangeInPos(pos);
+}
+
+static void shift_buffer_left(char *buf)
+{
+  for (int i = input.e - cap - 1; i < input.e; i++)
+  {
+    buf[(i) % INPUT_BUF] = buf[(i + 1) % INPUT_BUF]; // Shift elements to left
+  }
+  input.buf[input.e] = ' ';
+}
+
+static void shift_buffer_right(char *buf)
+{
+  for (int i = input.e; i > input.e - cap; i--)
+  {
+    buf[(i) % INPUT_BUF] = buf[(i-1) % INPUT_BUF]; // Shift elements to right
+  }
+}
 
 static void
 cgaputc(int c)
 {
-  int pos;
-
-  // Cursor position: col + 80*row.
-  outb(CRTPORT, 14);
-  pos = inb(CRTPORT+1) << 8;
-  outb(CRTPORT, 15);
-  pos |= inb(CRTPORT+1);
+  int pos = findPos();
 
   if(c == '\n')
     pos += 80 - pos%80;
-  else if(c == BACKSPACE){
-   if(pos > 0) --pos;
+  else if(c == BACKSPACE) {
+    shift_back_crt(pos);
+    if(pos > 0)
+      --pos;
   }
-  else if(c==RIGHT_ARROW){
-     int l=crt[--pos];
-     crt[pos] = (l&0xff) | 0x0700;
+  else
+  {
+    shift_forward_crt(pos);
+    crt[pos] = (c&0xff) | 0x0700;  // black on white
+    pos++;
   }
- 
-  else if(c==LEFT_ARROW){
-     int previous_pos=pos-1;
-     //printint(crt[previous_pos],10,0);
-     char l=crt[previous_pos];
-     
-     pos--;
-     
-       // int l=crt[pos];
-     //crt[pos] = (l&0xff) | 0x0700;
 
-  }
- 
- else
-    crt[pos++] = (c&0xff) | 0x0700;  // black on white
-
-  if(pos < 0 || pos > 25*80)
+  if(pos < 0 || pos > 25 * 80)
     panic("pos under/overflow");
 
-  if((pos/80) >= 24){  // Scroll up.
+  if((pos / 80) >= 24) {  // Scroll up.
     memmove(crt, crt+80, sizeof(crt[0])*23*80);
     pos -= 80;
     memset(crt+pos, 0, sizeof(crt[0])*(24*80 - pos));
   }
 
+  makeChangeInPos(pos);
+
+  crt[pos + cap] = ' ' | 0x0700; // space ra bezare tahe khat
+}
+
+void makeChangeInPos(int pos)
+{
   outb(CRTPORT, 14);
-  outb(CRTPORT+1, pos>>8);
+  outb(CRTPORT + 1, pos >> 8);
   outb(CRTPORT, 15);
-  outb(CRTPORT+1, pos);
-  crt[pos] = ' ' | 0x0700;
+  outb(CRTPORT + 1, pos);
 }
 
 void
 consputc(int c)
 {
-  if(panicked){
+  if(panicked) {
     cli();
     for(;;)
       ;
   }
 
-  if(c == BACKSPACE){
-    uartputc('\b'); uartputc(' '); uartputc('\b');
-  } else
+  if(c == BACKSPACE) {
+    uartputc('\b');
+    uartputc(' ');
+    uartputc('\b');
+  }
+  else
     uartputc(c);
+ 
   cgaputc(c);
 }
-
-#define INPUT_BUF 128
-struct {
-  char buf[INPUT_BUF];
-  uint r;  // Read index
-  uint w;  // Write index
-  uint e;  // Edit index
-} input;
 
 #define C(x)  ((x)-'@')  // Control-x
 
@@ -227,16 +306,37 @@ consoleintr(int (*getc)(void))
         consputc(BACKSPACE);
       }
       break;
-    case C('H'): case '\x7f':  // Backspace
-      if(input.e != input.w){
-        input.e--;
-        consputc(BACKSPACE);
-      }
+    case C('H'):
+      case '\x7f':  // Backspace
+        if(input.e != input.w && input.e - input.w > cap) {
+          if (cap > 0)
+            shift_buffer_left(input.buf);
+          input.e--;
+          consputc(BACKSPACE);
+        }
       break;
+
+    // left arrow
+    case LFARROW:
+      if ((input.e - cap) > input.w) 
+        goLeft();
+      break;
+   
+
+    // Right Arrow
+    case RTARROW:
+        goRight();
+    break;
+
     default:
       if(c != 0 && input.e-input.r < INPUT_BUF){
         c = (c == '\r') ? '\n' : c;
-        input.buf[input.e++ % INPUT_BUF] = c;
+
+        if (c=='\n')
+          cap = 0;
+
+        shift_buffer_right(input.buf);
+        input.buf[(input.e++ - cap) % INPUT_BUF] = c;
         consputc(c);
         if(c == '\n' || c == C('D') || input.e == input.r+INPUT_BUF){
           input.w = input.e;
@@ -316,4 +416,3 @@ consoleinit(void)
 
   ioapicenable(IRQ_KBD, 0);
 }
-
