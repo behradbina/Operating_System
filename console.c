@@ -412,7 +412,11 @@ consoleintr(int (*getc)(void))
 
     // DOWN Arrow
     case DOWNARROWKEY:
-      print("DOWN\n");
+      if (upDownKeyIndex > 0)
+      {
+        showNewCommand();
+      }
+      
     break;
 
     default:
@@ -423,6 +427,7 @@ consoleintr(int (*getc)(void))
           cap = 0;
           addNewCommandToHistory();
           controlNewCommand();
+          upDownKeyIndex = 0;
         }
 
         shift_buffer_right(input.buf);
@@ -441,7 +446,21 @@ consoleintr(int (*getc)(void))
     procdump();  // now call procdump() wo. cons.lock held
   }
 }
-
+void showNewCommand()
+{
+  upDownKeyIndex--;
+  clearTheInputLine();
+  if (upDownKeyIndex == 0)
+  {
+    putLastCommandBuf(tempBuf);
+  }
+  else
+  {
+    putLastCommandBuf(historyBuf[upDownKeyIndex-1]);
+  }
+  char* lastCommand = getLastCommand(0);
+  print(lastCommand);
+}
 void showPastCommand()
 {
   if (upDownKeyIndex == 0)
@@ -456,7 +475,6 @@ void showPastCommand()
   }
   upDownKeyIndex++;
   clearTheInputLine();
-  
   putLastCommandBuf(historyBuf[upDownKeyIndex-1]);
   char* lastCommand = getLastCommand(0);
   print(lastCommand);
@@ -478,6 +496,7 @@ void putLastCommandBuf(char* changedCommand)
     input.buf[h] = changedCommand[h-k-1];
   }
   input.buf[h] = '\0';
+  input.e = h;
 }
 void clearTheInputLine()
 {
