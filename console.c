@@ -386,6 +386,11 @@ consoleintr(int (*getc)(void))
             shift_buffer_left(input.buf);
           input.e--;
           consputc(BACKSPACE);
+          if (cap == 0)
+          {
+            input.buf[input.e] = '\0';
+          }
+          
         }
       break;
 
