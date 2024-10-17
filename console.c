@@ -28,7 +28,9 @@
 #define HISTORYSIZE 10
 
 char historyBuf[HISTORYSIZE][INPUT_BUF] = {'\0'};
-int historyIndex = 0;
+int historyCurrentSize = 0;
+int upDownKeyIndex = 0;
+char tempBuf[INPUT_BUF] = {'\0'};
 struct {
   char buf[INPUT_BUF];
   uint r;  // Read index
@@ -186,7 +188,7 @@ static void goLeft(){
   int pos = findPos();
   int first_write_index = NUMCOL * ((int) pos / NUMCOL) + 2;
 
-  if(pos >= first_write_index  && crt[pos - 2] != ('$' | 0x0700))
+  if(pos >= first_write_index  && crt[pos - 2] != (('$' & 0xff) | 0x0700))
   {
     pos--;
   }
@@ -291,7 +293,7 @@ consputc(int c)
 
 #define C(x)  ((x)-'@')  // Control-x
 
-char* getLastCommand()
+char* getLastCommand(int numberOfIgnore)
 {
   static char result[INPUT_BUF] = {'\0'};
   int i = 0;
@@ -300,8 +302,21 @@ char* getLastCommand()
     
   }
   int k =  i-1;
-  for (k = i-1; (input.buf[k] != '\n' && k != -1); k--)
+  for (k = i-1; (k != -1); k--)
   {
+    if (input.buf[k] == '\n')
+    {
+      if (numberOfIgnore == 0)
+      {
+        break;
+      }
+      else
+      {
+        i = k;
+        numberOfIgnore--;
+      }
+    }
+     
   }
   int h = k + 1;
   for (h = k+1; h < i; h++)
@@ -332,13 +347,17 @@ void addNewCommandToHistory()
     }
     historyBuf[i][j] = '\0';
   }
-  char* res = getLastCommand();
+  char* res = getLastCommand(0);
   int i = 0;
   for (i = 0; res[i] != '\0'; i++)
   {
     historyBuf[0][i] = res[i];
   }
   historyBuf[0][i] = '\0';
+  if (historyCurrentSize <= HISTORYSIZE)
+  {
+    historyCurrentSize = historyCurrentSize + 1;
+  }
 }
 
 void
@@ -384,7 +403,11 @@ consoleintr(int (*getc)(void))
 
     // UP Arrow 
     case UPARROWKEY:
-      print("UP\n");
+      if (upDownKeyIndex < historyCurrentSize)
+      {
+        showPastCommand();
+      }
+      
     break;
 
     // DOWN Arrow
@@ -417,6 +440,59 @@ consoleintr(int (*getc)(void))
   if(doprocdump) {
     procdump();  // now call procdump() wo. cons.lock held
   }
+}
+
+void showPastCommand()
+{
+  if (upDownKeyIndex == 0)
+  {
+    char* res = getLastCommand(0);
+    int i = 0;
+    for (i = 0; res[i] != '\0'; i++)
+    {
+      tempBuf[i] = res[i];
+    }
+    tempBuf[i] = '\0';
+  }
+  upDownKeyIndex++;
+  clearTheInputLine();
+  
+  putLastCommandBuf(historyBuf[upDownKeyIndex-1]);
+  char* lastCommand = getLastCommand(0);
+  print(lastCommand);
+}
+void putLastCommandBuf(char* changedCommand)
+{
+  int i = 0;
+  for (i = 0; input.buf[i] != '\0'; i++)
+  {
+    
+  }
+  int k =  i-1;
+  for (k = i-1; (input.buf[k] != '\n' && k != -1); k--)
+  {
+  }
+  int h = k + 1;
+  for (h = k+1; changedCommand[h-k-1] != '\0'; h++)
+  {
+    input.buf[h] = changedCommand[h-k-1];
+  }
+  input.buf[h] = '\0';
+}
+void clearTheInputLine()
+{
+  for (int i = 0; i < cap; i++)
+  {
+    goRight();
+  }
+  cap = 0;
+  char* res = getLastCommand(0);
+  int i = 0;
+  for (i = 0; res[i] != '\0'; i++)
+  {
+    consputc(BACKSPACE);
+  }
+  
 }
 int checkHistoryCommand(char* lastCommand)
 {
@@ -459,8 +535,6 @@ void doHistoryCommand()
     
   }
   i--;
-  printint(i,10,1);
-  consputc('\n');
   for (i ; i >= 0; i--)
   {
     printint(i+1,10 ,1);
@@ -469,11 +543,13 @@ void doHistoryCommand()
     consputc('\n');
   }
   
+  
+  
 }
 
 void controlNewCommand()
 {
-  char* lastCommand = getLastCommand();
+  char* lastCommand = getLastCommand(0);
   if (checkHistoryCommand(lastCommand))
   {
     doHistoryCommand();
