@@ -297,6 +297,7 @@ char* getLastCommand()
   int i = 0;
   for (i = 0; input.buf[i] != '\0'; i++)
   {
+    
   }
   int k =  i-1;
   for (k = i-1; (input.buf[k] != '\n' && k != -1); k--)
@@ -381,6 +382,16 @@ consoleintr(int (*getc)(void))
         goRight();
     break;
 
+    // UP Arrow 
+    case UPARROWKEY:
+      print("UP\n");
+    break;
+
+    // DOWN Arrow
+    case DOWNARROWKEY:
+      print("DOWN\n");
+    break;
+
     default:
       if(c != 0 && input.e-input.r < INPUT_BUF){
         c = (c == '\r') ? '\n' : c;
@@ -411,13 +422,19 @@ int checkHistoryCommand(char* lastCommand)
 {
   int flag = 1;
   char checkCommand[] = "history";
-  for (int i = 0; lastCommand[i] != '\0'; i++)
+  int i;
+  for (i = 0; lastCommand[i] != '\0'; i++)
   {
     if (checkCommand[i] != lastCommand[i] || i > 6)
     {
       flag = 0;
     }
   }
+  if (i == 0)
+  {
+    flag = 0;
+  }
+  
   return flag;
 }
 
