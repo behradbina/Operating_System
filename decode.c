@@ -2,12 +2,9 @@
 #include "stat.h"
 #include "user.h"
 #include "fcntl.h"
-//#include "console.h"
-//#include "stdio.h"
-//#include "string.h"
-//#include "ctype.h"
+
 void cesar_encode(char* text,int shift){
-    //printf(1,"a");
+ 
     for (int i=0;text[i]!='\0';i++)
     {
 
@@ -20,10 +17,7 @@ void cesar_encode(char* text,int shift){
          if( c<='Z' && c>='A' && text[i]<'A')
         text[i]+=26;
 
-     //   printf(1,"%c",text[i]);
-
-       // printf(1,c);
-
+  
         
     }
 }
@@ -35,23 +29,22 @@ int main(int argc,char* argv[]){
     }
     else{
         for (int i=1;i<argc;i++){
-            //printf(1,argv[i]);
+
             text_to_encode[i-1]=argv[i];
-            //printf(1,'\n');
+
         }
     }
          printf(1,'%c','\n');
     for (int i=0;i<argc-1;i++){
-        //printf(1,text_to_encode[i]);
-        //printf(1,"functions: \n");
-        cesar_encode(text_to_encode[i],1);
-       // printf(1,text_to_encode[i]);
-       // printf(1,'%c','\n');
+
+        cesar_encode(text_to_encode[i],15);
+
         }
 
         int fd=open("result.txt",O_CREATE|O_RDWR);
-       // printf(1,"hi \n");
+
         char * space=" ";
+        char * next_line="\n";
         if (fd <0){
             printf(1,"Unable to open or create file");
             exit();
@@ -63,7 +56,7 @@ int main(int argc,char* argv[]){
                 write(fd,space,strlen(space));
             }
 
-            //printf(1,"hi2");
+            write(fd,next_line,strlen(next_line));
 
 
         }
