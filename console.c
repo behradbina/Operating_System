@@ -31,7 +31,14 @@ char historyBuf[HISTORYSIZE][INPUT_BUF] = {'\0'};
 int historyCurrentSize = 0;
 int upDownKeyIndex = 0;
 char tempBuf[INPUT_BUF] = {'\0'};
-struct {
+
+char clipboard[INPUT_BUF] = {'\0'};
+
+int saveStatus  = 0; //Boolean to check the user wants to copy something
+int saveIndex = 0; //Index for clipboard to track saved characters
+
+struct 
+{
   char buf[INPUT_BUF];
   uint r;  // Read index
   uint w;  // Write index
@@ -260,7 +267,7 @@ cgaputc(int c)
 
   makeChangeInPos(pos);
 
-  crt[pos + cap] = ' ' | 0x0700; // space ra bezare tahe khat
+  crt[pos + cap] = ' ' | 0x0700; // To put the space in the end of the line 
 }
 
 void makeChangeInPos(int pos)
@@ -394,6 +401,30 @@ consoleintr(int (*getc)(void))
         }
       break;
 
+
+    case C('S'):
+      saveStatus = 1;
+      saveIndex = 0;
+      memset(clipboard, '\0', INPUT_BUF); // clear the clipborad. might be wrong approach
+      break;
+    
+    case C('F'):
+      if(saveStatus)
+      {
+        int i = 0;
+        while(clipboard[i] != '\0')
+        {
+          shift_buffer_right(input.buf);
+          input.buf[(input.e ++ - cap) % INPUT_BUF] = clipboard[i];
+          consputc(clipboard[i]);  
+          i++;
+        } 
+
+        saveStatus = 0;
+      }
+
+      break;
+
     // left arrow
     case LEFTARROWKEY:
       if ((input.e - cap) > input.w) 
@@ -435,6 +466,12 @@ consoleintr(int (*getc)(void))
           upDownKeyIndex = 0;
         }
 
+        if (saveStatus && c != '\n')
+        {
+            clipboard[saveIndex++] = c;
+            clipboard[saveIndex] = '\0'; 
+        }
+      
         shift_buffer_right(input.buf);
         input.buf[(input.e++ - cap) % INPUT_BUF] = c;
         consputc(c);
