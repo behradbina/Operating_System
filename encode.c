@@ -19,6 +19,7 @@ void cesar_encode(char* text,int shift){
         if(c>='A' && c<='Z'){
 
         
+
         base='A';}
         text[i]=(c-base+shift)%26+base;
         //printf(1,"%c",text[i]);
@@ -45,7 +46,7 @@ int main(int argc,char* argv[]){
     for (int i=0;i<argc-1;i++){
         //printf(1,text_to_encode[i]);
         //printf(1,"functions: \n");
-        cesar_encode(text_to_encode[i],1);
+        cesar_encode(text_to_encode[i],15);
         //printf(1,text_to_encode[i]);
        // printf(1,'%c','\n');
         }
@@ -53,6 +54,7 @@ int main(int argc,char* argv[]){
         int fd=open("result.txt",O_CREATE|O_RDWR);
        // printf(1,"hi \n");
         char * space=" ";
+        char * next_line="\n";
         if (fd <0){
             printf(1,"Unable to open or create file");
             exit();
@@ -66,7 +68,7 @@ int main(int argc,char* argv[]){
 
             //printf(1,"hi2");
 
-
+            write(fd,next_line,strlen(next_line));
         }
         close(fd);
     exit();
