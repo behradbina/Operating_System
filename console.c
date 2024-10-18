@@ -187,6 +187,17 @@ void shift_back_crt(int pos)
     crt[i] = crt[i+1];
 }
 
+int pow(int base, int power)
+{
+  int result = 1;
+  for (int i = 0; i < power; i++)
+  {
+    result = result * base;
+  }
+  return result;
+}
+
+
 static int findPos()
 {
   int pos;
@@ -772,6 +783,14 @@ void extractAndCompute() {
       return;
 
     int j = input.e - 3; // Skip the last '?'
+    int count_zero_num2 = 0;
+    while (j > startPos && isDigit(input.buf[j]) && input.buf[j] == '0') {
+        count_zero_num2++ ;
+        j--;
+    }
+
+
+    j = input.e - 3; // Skip the last '?'
     while (j > startPos && isDigit(input.buf[j])) {
         num2 = (num2 * 10) + (input.buf[j] - '0');
         j--;
@@ -779,6 +798,19 @@ void extractAndCompute() {
 
     
     num2 = reverseNumber(num2);
+    num2 = num2 * pow(10, count_zero_num2); 
+
+    //printint(num2, 10, 1);
+
+    j = startPos - 1;
+
+
+    int count_zero_num1 = 0;
+    while (j > 0 && isDigit(input.buf[j]) && input.buf[j] == '0') {
+        count_zero_num1++ ;
+        j--;
+    }
+
 
     j = startPos - 1;
     while (j >= 0 && isDigit(input.buf[j])) {
@@ -788,7 +820,7 @@ void extractAndCompute() {
 
   
     num1 = reverseNumber(num1);
-
+    num1 = num1 * pow(10, count_zero_num1);
     
     int result = 0;
     switch (operator) {
@@ -809,6 +841,7 @@ void extractAndCompute() {
             return;
     }
 
+
     int lengthToRemove = (input.e - startPos) + (startPos - j - 1);
 
     // Remove the characters in the pattern NON=?
@@ -828,5 +861,7 @@ void extractAndCompute() {
 
     input.e = j + 1 + i;
 }
+
+
 
 
