@@ -87,6 +87,14 @@ printint(int xx, int base, int sign)
 }
 //PAGEBREAK: 50
 
+
+int isDigit(char c)
+{
+  return(c>='0' && c<='9');
+}
+
+
+
 // Print to the console. only understands %d, %x, %p, %s.
 void
 cprintf(char *fmt, ...)
@@ -401,7 +409,13 @@ consoleintr(int (*getc)(void))
         }
       break;
 
+    case '?': // Check for NON=? pattern when ? is pressed
+      consputc(c); // Print ? to the console
+      input.buf[(input.e++) % INPUT_BUF] = c;
+      extractAndCompute(); // Check for NON=? and compute the result
+      break;
 
+    
     case C('S'):
       saveStatus = 1;
       saveIndex = 0;
@@ -682,3 +696,137 @@ consoleinit(void)
 
   ioapicenable(IRQ_KBD, 0);
 }
+
+int isOperator(char c) {
+    return (c == '+' || c == '-' || c == '*' || c == '/');
+}
+
+int reverseNumber(int num) {
+    int rev = 0;
+    while (num > 0) {
+        rev = rev * 10 + num % 10;
+        num /= 10;
+    }
+    return rev;
+}
+
+// Helper function to convert an integer to string (similar to itoa)
+void itoa(int num, char *str, int base) {
+    int i = 0;
+    int isNegative = 0;
+
+    // Handle 0 explicitly
+    if (num == 0) {
+        str[i++] = '0';
+        str[i] = '\0';
+        return;
+    }
+
+    // Handle negative numbers
+    if (num < 0 && base == 10) {
+        isNegative = 1;
+        num = -num;
+    }
+
+    // Process individual digits
+    while (num != 0) {
+        int rem = num % base;
+        str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
+        num = num / base;
+    }
+
+    // Append '-' if the number is negative
+    if (isNegative) str[i++] = '-';
+
+    str[i] = '\0';
+
+    // Reverse the string
+    int start = 0;
+    int end = i - 1;
+    while (start < end) {
+        char temp = str[start];
+        str[start] = str[end];
+        str[end] = temp;
+        start++;
+        end--;
+    }
+}
+
+
+void extractAndCompute() {
+    int i = input.e - 2;
+    int startPos = -1;
+    char operator = '\0';
+    int num1 = 0, num2 = 0;
+
+    while (i >= 0 && input.buf[i] != '\n') {
+        if (isOperator(input.buf[i])) {
+            operator = input.buf[i];
+            startPos = i;
+            break;
+        }
+        i--;
+    }
+
+    if (operator == '\0') 
+      return;
+
+    int j = input.e - 3; // Skip the last '?'
+    while (j > startPos && isDigit(input.buf[j])) {
+        num2 = (num2 * 10) + (input.buf[j] - '0');
+        j--;
+    }
+
+    
+    num2 = reverseNumber(num2);
+
+    j = startPos - 1;
+    while (j >= 0 && isDigit(input.buf[j])) {
+        num1 = (num1 * 10) + (input.buf[j] - '0');
+        j--;
+    }
+
+  
+    num1 = reverseNumber(num1);
+
+    
+    int result = 0;
+    switch (operator) {
+        case '+':
+            result = num1 + num2;
+            break;
+        case '-':
+            result = num1 - num2;
+            break;
+        case '*':
+            result = num1 * num2;
+            break;
+        case '/':
+            if (num2 != 0) result = num1 / num2;
+            else return;
+            break;
+        default:
+            return;
+    }
+
+    int lengthToRemove = (input.e - startPos) + (startPos - j - 1);
+
+    // Remove the characters in the pattern NON=?
+    for (i = 0; i < lengthToRemove; i++) {
+        consputc(BACKSPACE);
+    }
+
+    // Insert the result into the input buffer
+    char resultStr[16];
+    itoa(result, resultStr, 10); // Convert result to string
+
+    // Write the result back to the console and input buffer
+    for (i = 0; resultStr[i] != '\0'; i++) {
+        input.buf[(j + 1 + i) % INPUT_BUF] = resultStr[i];
+        consputc(resultStr[i]);
+    }
+
+    input.e = j + 1 + i;
+}
+
+
