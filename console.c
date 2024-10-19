@@ -597,6 +597,11 @@ int checkHistoryCommand(char* lastCommand)
     flag = 0;
   }
   
+  if (i < 7)
+  {
+    flag = 0;
+  }
+  
   return flag;
 }
 
