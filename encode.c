@@ -28,19 +28,21 @@ void cesar_encode(char* text,int shift){
 }
 int main(int argc,char* argv[]){
     char* text_to_encode[argc-1];
+    int flag=0;
     if(argc <2){
-        printf(1,"no text to encode passed");
+        printf(1,"no text to encode passed\n");
 
     }
     else{
+        flag=1;
         for (int i=1;i<argc;i++){
 
             text_to_encode[i-1]=argv[i];
     
         }
     }
-    
-    for (int i=0;i<argc-1;i++){
+    if(flag){
+        for (int i=0;i<argc-1;i++){
 
 
         cesar_encode(text_to_encode[i],15);
@@ -52,7 +54,7 @@ int main(int argc,char* argv[]){
         char * space=" ";
         char * next_line="\n";
         if (fd <0){
-            printf(1,"Unable to open or create file");
+            printf(1,"Unable to open or create file \n");
             exit();
         }
        
@@ -67,5 +69,8 @@ int main(int argc,char* argv[]){
             write(fd,next_line,strlen(next_line));
         }
         close(fd);
+
+    }
+    
     exit();
 }
