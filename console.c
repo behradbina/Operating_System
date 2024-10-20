@@ -928,8 +928,13 @@ void extractAndCompute() {
         consputc(resultStr[i]);
     }
 
+  
     input.e = j + 1 + i;
-
+    for (int i = input.e; i < INPUT_BUF; i++)
+    {
+      input.buf[i] = '\0';
+    }
+    
     // Handle the fractional part if there's a remainder
     if (reminder != 0) {
         
