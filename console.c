@@ -321,9 +321,10 @@ consputc(int c)
 
 char* getLastCommand(int numberOfIgnore)
 {
+  // consputc('O');
   static char result[INPUT_BUF] = {'\0'};
   int i = 0;
-  for (i = 0; input.buf[i] != '\0'; i++)
+  for (i = 0; input.buf[i] != '\0' && i < INPUT_BUF; i++)
   {
     
   }
@@ -512,6 +513,36 @@ consoleintr(int (*getc)(void))
   if(doprocdump) {
     procdump();  // now call procdump() wo. cons.lock held
   }
+  // checkBufferNeedEmpty();
+}
+
+void checkBufferNeedEmpty()
+{
+  for (int i = 0; input.buf[i] != '\0'; i++)
+  {
+    if (i > INPUT_BUF-3)
+    {
+      makeBufferEmpty();
+      break;
+    }
+    
+  }
+  
+}
+makeBufferEmpty()
+{
+  char* lastCommand = getLastCommand(0);
+  for (int i = 0; i < INPUT_BUF; i++)
+  {
+    input.buf[i] = '\0';
+  }
+  int i = 0;
+  for (i = 0; lastCommand[i] != '\0'; i++)
+  {
+    input.buf[i] = lastCommand[i];
+  }
+  input.e = i;
+  
 }
 void showNewCommand()
 {
@@ -549,7 +580,7 @@ void showPastCommand()
 void putLastCommandBuf(char* changedCommand)
 {
   int i = 0;
-  for (i = 0; input.buf[i] != '\0'; i++)
+  for (i = 0; input.buf[i] != '\0' && i < INPUT_BUF; i++)
   {
     
   }
@@ -567,10 +598,12 @@ void putLastCommandBuf(char* changedCommand)
 }
 void clearTheInputLine()
 {
+  int pos = findPos();
   for (int i = 0; i < cap; i++)
   {
-    goRight();
+    pos++;
   }
+  makeChangeInPos(pos);
   cap = 0;
   char* res = getLastCommand(0);
   int i = 0;
