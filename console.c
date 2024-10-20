@@ -726,32 +726,28 @@ int reverseNumber(int num) {
     return rev;
 }
 
-// Helper function to convert an integer to string (similar to itoa)
+
 void itoa(int num, char *str, int base) {
     int i = 0;
     int isNegative = 0;
 
-    // Handle 0 explicitly
     if (num == 0) {
         str[i++] = '0';
         str[i] = '\0';
         return;
     }
 
-    // Handle negative numbers
     if (num < 0 && base == 10) {
         isNegative = 1;
         num = -num;
     }
 
-    // Process individual digits
     while (num != 0) {
         int rem = num % base;
         str[i++] = (rem > 9) ? (rem - 10) + 'a' : rem + '0';
         num = num / base;
     }
 
-    // Append '-' if the number is negative
     if (isNegative) str[i++] = '-';
 
     str[i] = '\0';
@@ -768,6 +764,17 @@ void itoa(int num, char *str, int base) {
     }
 }
 
+void reverseStr(char* str, int len) {
+    int i = 0, j = len - 1;
+    while (i < j) {
+        char temp = str[i];
+        str[i] = str[j];
+        str[j] = temp;
+        i++;
+        j--;
+    }
+}
+
 
 void extractAndCompute() {
     int i = input.e - 2;
@@ -775,6 +782,7 @@ void extractAndCompute() {
     char operator = '\0';
     int num1 = 0, num2 = 0;
 
+    // Find the operator in the pattern NON=?
     while (i >= 0 && input.buf[i] != '\n') {
         if (isOperator(input.buf[i])) {
             operator = input.buf[i];
@@ -784,16 +792,14 @@ void extractAndCompute() {
         i--;
     }
 
-    if (operator == '\0') 
-      return;
+    if (operator == '\0') return;
 
     int j = input.e - 3; // Skip the last '?'
     int count_zero_num2 = 0;
     while (j > startPos && isDigit(input.buf[j]) && input.buf[j] == '0') {
-        count_zero_num2++ ;
+        count_zero_num2++;
         j--;
     }
-
 
     j = input.e - 3; // Skip the last '?'
     while (j > startPos && isDigit(input.buf[j])) {
@@ -801,21 +807,15 @@ void extractAndCompute() {
         j--;
     }
 
-    
     num2 = reverseNumber(num2);
-    num2 = num2 * pow(10, count_zero_num2); 
-
-    //printint(num2, 10, 1);
+    num2 = num2 * pow(10, count_zero_num2);
 
     j = startPos - 1;
-
-
     int count_zero_num1 = 0;
     while (j > 0 && isDigit(input.buf[j]) && input.buf[j] == '0') {
-        count_zero_num1++ ;
+        count_zero_num1++;
         j--;
     }
-
 
     j = startPos - 1;
     while (j >= 0 && isDigit(input.buf[j])) {
@@ -823,11 +823,11 @@ void extractAndCompute() {
         j--;
     }
 
-  
     num1 = reverseNumber(num1);
     num1 = num1 * pow(10, count_zero_num1);
-    
+
     int result = 0;
+    int reminder = 0;
     switch (operator) {
         case '+':
             result = num1 + num2;
@@ -839,13 +839,20 @@ void extractAndCompute() {
             result = num1 * num2;
             break;
         case '/':
-            if (num2 != 0) result = num1 / num2;
-            else return;
+            if (num2 != 0) {
+                result = num1 / num2;
+                reminder = num1 % num2;
+                // If there's a remainder, calculate the decimal part
+                if (reminder != 0) {
+                    reminder = (reminder * 10) / num2;
+                }
+            } else {
+                return; // Division by zero, so we exit
+            }
             break;
         default:
             return;
     }
-
 
     int lengthToRemove = (input.e - startPos) + (startPos - j - 1);
 
@@ -865,7 +872,22 @@ void extractAndCompute() {
     }
 
     input.e = j + 1 + i;
+
+    // Handle the fractional part if there's a remainder
+    if (reminder != 0) {
+        
+        consputc('.');
+        input.buf[input.e % INPUT_BUF] = '.';
+        input.e++;
+        
+        char decimalResult[2]; 
+        itoa(reminder, decimalResult, 10);
+        consputc(decimalResult[0]);
+        input.buf[input.e % INPUT_BUF] = decimalResult[0];
+        input.e++;
+    }
 }
+
 
 
 
