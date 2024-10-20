@@ -37,6 +37,9 @@ char clipboard[INPUT_BUF] = {'\0'};
 int saveStatus  = 0; //Boolean to check the user wants to copy something
 int saveIndex = 0; //Index for clipboard to track saved characters
 
+int start_copy = 0;
+int end_copy = 0; 
+
 struct 
 {
   char buf[INPUT_BUF];
@@ -431,12 +434,19 @@ consoleintr(int (*getc)(void))
     case C('S'):
       saveStatus = 1;
       saveIndex = 0;
+      start_copy = input.e;
       memset(clipboard, '\0', INPUT_BUF); // clear the clipborad
       break;
     
     case C('F'):
       if(saveStatus)
       {
+
+        end_copy = input.e;
+
+        // if you want to paste based on time make the following line uncomment 
+        paste(start_copy, end_copy);
+
         int i = 0;
         while(clipboard[i] != '\0')
         {
@@ -492,12 +502,15 @@ consoleintr(int (*getc)(void))
           upDownKeyIndex = 0;
         }
 
-        if (saveStatus && c != '\n')
+        //if you want to copy pase based on time comment the following condition 
+
+        /*if (saveStatus && c != '\n')
         {
             clipboard[saveIndex++] = c;
             clipboard[saveIndex] = '\0'; 
-        }
-      
+        }*/
+
+        
         shift_buffer_right(input.buf);
         input.buf[(input.e++ - cap) % INPUT_BUF] = c;
         consputc(c);
@@ -808,6 +821,17 @@ void reverseStr(char* str, int len) {
     }
 }
 
+void paste(int start, int end)
+{
+  int k = 0;
+  for (int i = start; i <= end; i++)
+  {
+    clipboard[k] = input.buf[i];
+    k++;
+  }
+  clipboard[k] = '\0';
+  
+}
 
 void extractAndCompute() {
     int i = input.e - 2;
