@@ -3,7 +3,7 @@
 #include "user.h"
 #include "fcntl.h"
 
-void cesar_encode(char* text,int shift){
+void cesar_decode(char* text,int shift){
  
     for (int i=0;text[i]!='\0';i++)
     {
@@ -22,12 +22,14 @@ void cesar_encode(char* text,int shift){
     }
 }
 int main(int argc,char* argv[]){
+    int flag=0;
     char* text_to_encode[argc-1];
     if(argc <2){
-        printf(1,"no text to encode passed");
+        printf(1,"no text to decode passed \n");
 
     }
     else{
+        flag=1;
         for (int i=1;i<argc;i++){
 
             text_to_encode[i-1]=argv[i];
@@ -35,9 +37,9 @@ int main(int argc,char* argv[]){
         }
     }
          printf(1,'%c','\n');
-    for (int i=0;i<argc-1;i++){
+         if (flag){for (int i=0;i<argc-1;i++){
 
-        cesar_encode(text_to_encode[i],15);
+        cesar_decode(text_to_encode[i],15);
 
         }
 
@@ -60,6 +62,7 @@ int main(int argc,char* argv[]){
 
 
         }
-        close(fd);
+        close(fd);}
+    
     exit();
 }
