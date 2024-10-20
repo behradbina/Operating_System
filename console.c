@@ -430,7 +430,7 @@ consoleintr(int (*getc)(void))
     case C('S'):
       saveStatus = 1;
       saveIndex = 0;
-      memset(clipboard, '\0', INPUT_BUF); // clear the clipborad. might be wrong approach
+      memset(clipboard, '\0', INPUT_BUF); // clear the clipborad
       break;
     
     case C('F'):
