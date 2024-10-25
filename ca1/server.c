@@ -1,112 +1,120 @@
-#include <stdio.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <cstdlib>
-#include <cstring>
+#include "const.h"
+#include <map>
+#include <mutex>
 #include <vector>
+#include <string>
+#include <thread>
 #include <poll.h>
 #include <unistd.h>
-#include <map>
-#include <thread>
-#include <mutex>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <cstring>
+#include <fcntl.h>
 
-typedef struct pollfd pollfd;
+using namespace std;
 
-#define BUFFER_SIZE 1024
-#define MAX_PLAYERS 2
-
-std::mutex room_mutex;  // To protect shared resources (rooms)
-
-struct Room {
-    int room_fd;
-    int player_count;
-    int player_fds[MAX_PLAYERS];  // Store file descriptors of players
-    std::string choices[MAX_PLAYERS];  // Store choices: "rock", "paper", "scissors"
-};
-
-// Global container for rooms
-std::map<int, Room> rooms;  // room_fd -> Room
-int num_rooms;
-
-void start_room_game(Room& room) {
-    char buffer[BUFFER_SIZE];
-
-    // Send the game start signal to both players
-    const char* start_msg = "Game started! Choose rock, paper, or scissors:\n";
-    for (int i = 0; i < MAX_PLAYERS; ++i) {
-        send(room.player_fds[i], start_msg, strlen(start_msg), 0);
+class Room {
+public:
+    Room(int fd, int port) : room_fd(fd), port(port), player_count(0) {
+        memset(player_fds, -1, sizeof(player_fds));
+        memset(choices, NOTCHOSEN, sizeof(choices));
     }
 
-    // Wait for players to send choices within 10 seconds
-    struct pollfd pfds[MAX_PLAYERS];
-    for (int i = 0; i < MAX_PLAYERS; ++i) {
-        pfds[i].fd = room.player_fds[i];
+    int getRoomFd() const { return room_fd; }
+    int getPort() const { return port; }
+    int getPlayerCount() const { return player_count; }
+    int getPlayerFd(int player_index) const { return player_fds[player_index]; }
+    int getChoice(int player_index) const { return choices[player_index]; }
+    bool isFull() const { return player_count >= ROOM_PLAYER; }
+
+    bool addPlayer(int player_fd) {
+        if (player_count < ROOM_PLAYER) {
+            player_fds[player_count++] = player_fd;
+            return true;
+        }
+        return false;
+    }
+
+    void setChoice(int player_index, int choice) {
+        if (player_index < ROOM_PLAYER) {
+            choices[player_index] = choice;
+        }
+    }
+
+    void sendToAll(const char* message) const {
+        for (int i = 0; i < player_count; ++i) {
+            send(player_fds[i], message, strlen(message), 0);
+        }
+    }
+
+    void startGame();
+
+private:
+    int room_fd;
+    int port;
+    int player_count;
+    int player_fds[ROOM_PLAYER];
+    int choices[ROOM_PLAYER];
+};
+
+// Room game logic
+void Room::startGame() {
+    char buffer[BUFFER_SIZE];
+    const char* start_msg = "Game started! Choose rock, paper, or scissors:\n";
+    sendToAll(start_msg);
+
+    struct pollfd pfds[ROOM_PLAYER];
+    for (int i = 0; i < player_count; ++i) {
+        pfds[i].fd = player_fds[i];
         pfds[i].events = POLLIN;
     }
 
-    int result = poll(pfds, MAX_PLAYERS, 10000);  // 10 seconds timeout
+    int result = poll(pfds, player_count, 10000); // 10-second timeout
     if (result <= 0) {
-        // Timeout or error, both players lose if no response
-        const char* timeout_msg = "Timeout! Both players lose.\n";
-        for (int i = 0; i < MAX_PLAYERS; ++i) {
-            send(room.player_fds[i], timeout_msg, strlen(timeout_msg), 0);
-        }
+        sendToAll("Timeout! Both players lose.\n");
         return;
     }
 
-    for (int i = 0; i < MAX_PLAYERS; ++i) {
+    for (int i = 0; i < player_count; ++i) {
         if (pfds[i].revents & POLLIN) {
-            recv(room.player_fds[i], buffer, BUFFER_SIZE, 0);
-            room.choices[i] = std::string(buffer);  // Store the player's choice
-        } else {
-            room.choices[i] = "";  // Timeout case, no choice made
+            int choice;
+            recv(player_fds[i], &choice, sizeof(choice), 0);
+            setChoice(i, choice);
         }
     }
 
-    // Game logic to determine the winner
     const char* result_msg;
-    if (room.choices[0] == room.choices[1]) {
+    if (choices[0] == choices[1]) {
         result_msg = "Draw! Both players chose the same.\n";
     } else if (
-        (room.choices[0] == "rock" && room.choices[1] == "scissors") ||
-        (room.choices[0] == "scissors" && room.choices[1] == "paper") ||
-        (room.choices[0] == "paper" && room.choices[1] == "rock")) {
+        (choices[0] == ROCK && choices[1] == SISSORS) ||
+        (choices[0] == SISSORS && choices[1] == PAPER) ||
+        (choices[0] == PAPER && choices[1] == ROCK)) {
         result_msg = "Player 1 wins!\n";
     } else {
         result_msg = "Player 2 wins!\n";
     }
-
-    for (int i = 0; i < MAX_PLAYERS; ++i) {
-        send(room.player_fds[i], result_msg, strlen(result_msg), 0);
-    }
+    sendToAll(result_msg);
 }
 
-void handle_room(int room_fd) {
+mutex room_mutex;
+map<int, Room> rooms; // room_fd -> Room
+int num_rooms;
+
+// Helper function to add a new player to a room
+bool addPlayerToRoom(int room_fd, int player_fd) {
+    lock_guard<mutex> lock(room_mutex);
     Room& room = rooms[room_fd];
-
-    // Wait until the room has two players
-    while (room.player_count < MAX_PLAYERS) {
-        // Busy waiting or use a condition variable (skipped for simplicity)
-    }
-
-    start_room_game(room);
+    return room.addPlayer(player_fd);
 }
 
-int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        perror("Invalid Arguments. Usage: ./server.out {IP} {PORT} {#Rooms}");
-        exit(EXIT_FAILURE);
-    }
-
-    char* ipaddr = argv[1];
-    int base_port = strtol(argv[2], NULL, 10);
-    num_rooms = strtol(argv[3], NULL, 10);
-
-    struct sockaddr_in server_addr, room_addr;
+// Example usage of Room class in setup and handling functions
+int set_up_connector(char *ipaddr, int base_port, int num_rooms) {
+    struct sockaddr_in server_addr;
     int server_fd, opt = 1;
 
-    // Setup Connector socket
     server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(base_port);
     if (inet_pton(AF_INET, ipaddr, &(server_addr.sin_addr)) == -1)
         perror("FAILED: Input ipv4 address invalid");
 
@@ -116,16 +124,16 @@ int main(int argc, char* argv[]) {
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1)
         perror("FAILED: Making socket reusable failed");
 
-    server_addr.sin_port = htons(base_port);
     if (bind(server_fd, (struct sockaddr*)(&server_addr), sizeof(server_addr)) == -1)
         perror("FAILED: Bind unsuccessfull");
 
     if (listen(server_fd, 20) == -1)
         perror("FAILED: Listen unsuccessfull");
 
+    set_non_blocking(server_fd);
     printf("Connector running on %s:%d with %d rooms.\n", ipaddr, base_port, num_rooms);
 
-    // Initialize rooms
+    struct sockaddr_in room_addr;
     for (int i = 0; i < num_rooms; ++i) {
         int room_fd = socket(PF_INET, SOCK_STREAM, 0);
         room_addr.sin_family = AF_INET;
@@ -138,48 +146,30 @@ int main(int argc, char* argv[]) {
         if (listen(room_fd, 2) == -1)
             perror("FAILED: Room listen unsuccessful");
 
-        // Create room instance
-        Room room;
-        room.room_fd = room_fd;
-        room.player_count = 0;
+        Room room(room_fd, base_port + 1 + i);
         rooms[room_fd] = room;
-
-        // Start room handler in a new thread
-        std::thread(handle_room, room_fd).detach();
         printf("Room %d is ready on port %d.\n", i, base_port + 1 + i);
     }
+    return server_fd;
+}
 
-    // Poll for new player connections
-    std::vector<pollfd> pfds;
-    pfds.push_back(pollfd{server_fd, POLLIN, 0});
+int process_room_choice(int player_fd, int room_choice, int bytes_received) {
+    int status = FULLROOM;
+    if (bytes_received > 0 && !rooms[room_choice].isFull()) {
+        if (addPlayerToRoom(room_choice, player_fd)) {
+            status = JOIN_SUCCESSFULLY;
+            send(player_fd, &status, sizeof(status), 0);
+            printf("Player %d joined Room %d\n", player_fd, room_choice);
 
-    while (1) {
-        if (poll(pfds.data(), pfds.size(), -1) == -1) {
-            perror("Poll failed");
-            continue;
-        }
+            int port = rooms[room_choice].getPort();
+            send(player_fd, &port, sizeof(port), 0);
 
-        for (size_t i = 0; i < pfds.size(); ++i) {
-            if (pfds[i].revents & POLLIN) {
-                // Handle new player connection
-                struct sockaddr_in new_addr;
-                socklen_t new_size = sizeof(new_addr);
-                int new_fd = accept(server_fd, (struct sockaddr*)(&new_addr), &new_size);
-
-                // Send list of rooms to player
-                char room_list[BUFFER_SIZE] = "Available rooms:\n";
-                for (const auto& [room_fd, room] : rooms) {
-                    if (room.player_count < MAX_PLAYERS) {
-                        char temp[50];
-                        sprintf(temp, "Room %d on port %d\n", room_fd, ntohs(room_addr.sin_port));
-                        strcat(room_list, temp);
-                    }
-                }
-                send(new_fd, room_list, strlen(room_list), 0);
+            if (rooms[room_choice].isFull()) {
+                thread(&Room::startGame, &rooms[room_choice]).detach();
             }
+            return 1;
         }
     }
-
-    close(server_fd);
+    send(player_fd, &status, sizeof(status), 0);
     return 0;
 }
