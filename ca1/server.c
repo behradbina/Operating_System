@@ -1,17 +1,9 @@
 #include "const.h"
-#include <map>
-#include <mutex>
-#include <vector>
-#include <string>
-#include <thread>
-#include <poll.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <cstring>
-#include <fcntl.h>
 
 using namespace std;
+typedef struct pollfd pollfd;
+mutex room_mutex;
+
 
 class Room {
 public:
@@ -97,10 +89,6 @@ void Room::startGame() {
     sendToAll(result_msg);
 }
 
-mutex room_mutex;
-map<int, Room> rooms; // room_fd -> Room
-int num_rooms;
-
 // Helper function to add a new player to a room
 bool addPlayerToRoom(int room_fd, int player_fd) {
     lock_guard<mutex> lock(room_mutex);
@@ -108,7 +96,22 @@ bool addPlayerToRoom(int room_fd, int player_fd) {
     return room.addPlayer(player_fd);
 }
 
-// Example usage of Room class in setup and handling functions
+map<int, Room> rooms;  // room_fd -> Room
+int num_rooms;
+
+void set_non_blocking(int sock) 
+{
+    int flags = fcntl(sock, F_GETFL, 0);
+    if (flags == -1) {
+        perror("fcntl F_GETFL failed");
+        exit(EXIT_FAILURE);
+    }
+    if (fcntl(sock, F_SETFL, flags | O_NONBLOCK) == -1) {
+        perror("fcntl F_SETFL failed");
+        exit(EXIT_FAILURE);
+    }
+}
+
 int set_up_connector(char *ipaddr, int base_port, int num_rooms) {
     struct sockaddr_in server_addr;
     int server_fd, opt = 1;
@@ -153,6 +156,31 @@ int set_up_connector(char *ipaddr, int base_port, int num_rooms) {
     return server_fd;
 }
 
+int accept_client(int server_fd, vector<pollfd>& pfds)
+{
+    struct sockaddr_in new_addr;
+    socklen_t new_size = sizeof(new_addr);
+    int new_fd = accept(server_fd, (struct sockaddr*)(&new_addr), &new_size);
+    set_non_blocking(new_fd);
+    write(1, &new_fd, sizeof(new_fd));
+    pfds.push_back(pollfd{new_fd, POLLIN, 0});
+    return new_fd;
+}
+
+void send_available_rooms(int server_fd, int new_fd)
+{
+    char room_list[BUFFER_SIZE] = "Available rooms:\n";
+    for (const auto& [room_fd, room] : rooms) {
+        if (room.getPlayerCount() < ROOM_PLAYER) {
+            char temp[50];
+            sprintf(temp, "Room fd %d \n", room_fd);
+            strcat(room_list, temp);
+        }
+    }
+    send(new_fd, room_list, strlen(room_list), 0);
+}
+
+
 int process_room_choice(int player_fd, int room_choice, int bytes_received) {
     int status = FULLROOM;
     if (bytes_received > 0 && !rooms[room_choice].isFull()) {
@@ -173,3 +201,74 @@ int process_room_choice(int player_fd, int room_choice, int bytes_received) {
     send(player_fd, &status, sizeof(status), 0);
     return 0;
 }
+
+int main(int argc, char* argv[]) 
+{
+    if (argc != 4) 
+    {
+        perror("Invalid Arguments. Usage: ./server.out {IP} {PORT} {#Rooms}");
+        exit(EXIT_FAILURE);
+    }
+
+    char* ipaddr = argv[1];
+    int base_port = strtol(argv[2], NULL, 10);
+    num_rooms = strtol(argv[3], NULL, 10);
+
+    int server_fd = set_up_connector(ipaddr,base_port,num_rooms);
+
+    vector<pollfd> pfds;
+    pfds.push_back(pollfd{server_fd, POLLIN, 0});
+
+    while (1) 
+    {
+        if (poll(pfds.data(), pfds.size(), -1) == -1) {
+            perror("Poll failed");
+            continue;
+        }
+        
+        for (size_t i = 0; i < pfds.size(); ++i) 
+        {
+            if (pfds[i].revents & POLLIN) 
+            {
+                if(pfds[i].fd == server_fd) // new user
+                {
+                    int new_fd = accept_client(server_fd, pfds);
+                    send_available_rooms(server_fd, new_fd);
+                    pfds.push_back(pollfd{new_fd, POLLIN, 0});
+                }
+
+                else // message from user
+                {
+                    command com;
+                    int bytes_recieved = recv(pfds[i].fd, &com, sizeof(com), 0);
+                    int command_type = com.command_type;
+                    int command_data = com.data;
+
+                    
+
+                    if (command_type == CHOOSE_ROOM && 
+                        rooms[command_data].getPlayerCount() < 2)
+                    {
+                        process_room_choice(pfds[i].fd, command_data, bytes_recieved);
+                        //connect_room_player(command_data, pfds[i].fd );
+
+                    }
+                    
+                    //if command_type = choose_option
+                        // choose option -> find 
+
+                    char buffer[BUFFER_SIZE];
+                    memset(buffer, 0, BUFFER_SIZE);
+                    write(1, buffer, strlen(buffer));
+                }
+                
+            
+                
+            }
+        }
+    }
+
+    close(server_fd);
+    return 0;
+}
+
