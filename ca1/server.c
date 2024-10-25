@@ -55,38 +55,59 @@ void Room::startGame() {
     const char* start_msg = "Game started! Choose rock, paper, or scissors:\n";
     sendToAll(start_msg);
 
-    struct pollfd pfds[ROOM_PLAYER];
-    for (int i = 0; i < player_count; ++i) {
-        pfds[i].fd = player_fds[i];
-        pfds[i].events = POLLIN;
-    }
+    int scores[ROOM_PLAYER] = {0, 0}; // Initialize scores for both players
+    bool game_end = false;
 
-    int result = poll(pfds, player_count, 10000); // 10-second timeout
-    if (result <= 0) {
-        sendToAll("Timeout! Both players lose.\n");
-        return;
-    }
+    while (!game_end) {
+        memset(choices, NOTCHOSEN, sizeof(choices)); // Reset choices
 
-    for (int i = 0; i < player_count; ++i) {
-        if (pfds[i].revents & POLLIN) {
-            int choice;
-            recv(player_fds[i], &choice, sizeof(choice), 0);
-            setChoice(i, choice);
+        struct pollfd pfds[ROOM_PLAYER];
+        for (int i = 0; i < player_count; ++i) {
+            pfds[i].fd = player_fds[i];
+            pfds[i].events = POLLIN;
+        }
+
+        sendToAll("Choose rock (0), paper (1), or scissors (2):\n");
+
+        int result = poll(pfds, player_count, 10000); // 10-second timeout
+        if (result <= 0) {
+            sendToAll("Timeout! Both players lose.\n");
+            return;
+        }
+
+        for (int i = 0; i < player_count; ++i) {
+            if (pfds[i].revents & POLLIN) {
+                int choice;
+                recv(player_fds[i], &choice, sizeof(choice), 0);
+                setChoice(i, choice);
+            }
+        }
+
+        // Determine round result
+        const char* result_msg;
+        if (choices[0] == choices[1]) {
+            result_msg = "Draw! Both players chose the same.\n";
+        } else if (
+            (choices[0] == ROCK && choices[1] == SCISSORS) ||
+            (choices[0] == SCISSORS && choices[1] == PAPER) ||
+            (choices[0] == PAPER && choices[1] == ROCK)) {
+            result_msg = "Player 1 wins this round!\n";
+            scores[0]++;
+        } else {
+            result_msg = "Player 2 wins this round!\n";
+            scores[1]++;
+        }
+        sendToAll(result_msg);
+
+        // Check for end condition (e.g., first to 3 wins or server command)
+        if (scores[0] >= 3 || scores[1] >= 3) {
+            char final_msg[BUFFER_SIZE];
+            sprintf(final_msg, "Game Over! Final Score - Player 1: %d, Player 2: %d\n",
+                    scores[0], scores[1]);
+            sendToAll(final_msg);
+            game_end = true;
         }
     }
-
-    const char* result_msg;
-    if (choices[0] == choices[1]) {
-        result_msg = "Draw! Both players chose the same.\n";
-    } else if (
-        (choices[0] == ROCK && choices[1] == SISSORS) ||
-        (choices[0] == SISSORS && choices[1] == PAPER) ||
-        (choices[0] == PAPER && choices[1] == ROCK)) {
-        result_msg = "Player 1 wins!\n";
-    } else {
-        result_msg = "Player 2 wins!\n";
-    }
-    sendToAll(result_msg);
 }
 
 // Helper function to add a new player to a room
