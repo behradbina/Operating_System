@@ -10,17 +10,21 @@ int num_rooms;
 class Room 
 {
 public:
-    Room() : room_fd(-1), port(-1), player_count(0) 
+    Room() : room_fd(-1), port(-1), player_count(0), udp_broadcast_socket(-1) 
     {  
         memset(player_fds, -1, sizeof(player_fds));
         memset(choices, NOTCHOSEN, sizeof(choices));
     }
 
     
-    Room(int fd, int port) : room_fd(fd), port(port), player_count(0) 
+    Room(int fd, int port) : room_fd(fd), port(port), player_count(0), udp_broadcast_socket(-1)                              
     {
         memset(player_fds, -1, sizeof(player_fds));
         memset(choices, NOTCHOSEN, sizeof(choices));
+        game_end = false;
+        scores[ROOM_PLAYER] = {0};
+        send_choose_rps = false;
+        send_inform_message = false;
     }
 
     int getRoomFd() const { return room_fd; }
@@ -32,6 +36,16 @@ public:
 
     bool isWinner(int choice1, int choice2)
     {
+
+        if (choice1 == NOTCHOSEN && choice2 != NOTCHOSEN)
+        {
+            return false;
+        }
+        if (choice1 != NOTCHOSEN && choice2 == NOTCHOSEN)
+        {
+            return true;
+        }
+
         if((choice1 == ROCK && choice2 == SISSORS) ||
             (choice1 == SISSORS && choice2 == PAPER) ||
             (choice1 == PAPER && choice2 == ROCK))
@@ -40,8 +54,7 @@ public:
         return false;
     }
 
-
-    void addPlayer() 
+    void addPlayer(string username) 
     {
         printf("In addPlayer \n");
         fflush(stdout);
@@ -51,12 +64,14 @@ public:
         set_non_blocking(new_fd);
         
         if (player_count < ROOM_PLAYER) {
-            player_fds[player_count++] = new_fd;
+            player_fds[player_count] = new_fd;
+            usernames.push_back(username);
+            player_count++;
         }
 
         if(player_count ==ROOM_PLAYER)
         {
-            sendToAll(GAME_START);
+            continue_game();
         }
     }
 
@@ -73,8 +88,11 @@ public:
             send(player_fds[i], &message, sizeof(message), 0);
         }
     }
-
-    void startGame();
+    void setup_broadcast_socket(int port);
+    void sendbroadcast_message(string message);
+    void recieve_player_choices();
+    void judge(int choice0, int choice1);
+    void continue_game();
 
 
 private:
@@ -83,48 +101,58 @@ private:
     int player_count;
     int player_fds[ROOM_PLAYER];
     int choices[ROOM_PLAYER];
+    int scores[ROOM_PLAYER];
+    
+    int udp_broadcast_socket;
+    struct sockaddr_in broadcast_addr;
+
+    vector<string> usernames;
+    bool game_end;
+    bool send_choose_rps;
+    bool send_inform_message;
+
 };
 
-void Room::startGame() 
+void Room::continue_game() 
 {
-    sendToAll(GAME_START);
+    printf("here!\n");
+    int message = CHOOSE_RPS;
 
-    int scores[ROOM_PLAYER] = {0, 0}; // Initialize scores for both players
-    bool game_end = false;
+    sendto(udp_broadcast_socket, &message, sizeof(message), 0,
+      (struct sockaddr*)&broadcast_addr, sizeof(broadcast_addr));
 
-    while (!game_end) 
+
+    printf("here!\n");
+
+    if (!send_choose_rps)
     {
         memset(choices, NOTCHOSEN, sizeof(choices)); // Reset choices
-
-        struct pollfd pfds[ROOM_PLAYER];
-
-        for (int i = 0; i < player_count; ++i) 
-        {
-            pfds[i].fd = player_fds[i];
-            pfds[i].events = POLLIN;
-        }
-
         sendToAll(CHOOSE_RPS);
+        send_choose_rps = true;
+    }
 
-        /*int result = poll(pfds, player_count, 10000); // 10-second timeout
-        
-        if (result <= 0) 
-        {
-            sendToAll("Timeout! Both players lose.\n");
-            return;
-        }*/
+    if (!send_inform_message)
+    {
+        sendToAll(INFORM_RESULT);
+        send_inform_message = true;
+    }
+    
 
-        for (int i = 0; i < player_count; ++i) {
-            if (pfds[i].revents & POLLIN) {
-                int choice;
-                recv(player_fds[i], &choice, sizeof(choice), 0);
-                setChoice(i, choice);
-            }
-        }
+    judge(choices[0], choices[1]);
 
-        // Determine round result
-        int result_msg;
-        if (choices[0] == choices[1]) 
+    if (send_choose_rps && send_inform_message)
+    {
+        send_choose_rps = false;
+        send_inform_message = false;
+    }
+    
+
+}
+
+void Room::judge(int choice0, int choice1)
+{
+    int result_msg;
+        if (choice0 == choice1) 
         {
             result_msg = EQUAL;
             send(player_fds[0], &result_msg, sizeof(result_msg), 0);
@@ -145,7 +173,32 @@ void Room::startGame()
             send(player_fds[1], &result_msg, sizeof(result_msg), 0);
             scores[1]++;
         }
-    }
+}
+
+void Room::recieve_player_choices()
+{
+
+}
+
+void Room::setup_broadcast_socket(int port)
+{
+    int broadcast = 1, opt = 1;
+    udp_broadcast_socket = socket(AF_INET, SOCK_DGRAM, 0);
+    setsockopt(udp_broadcast_socket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    setsockopt(udp_broadcast_socket, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+
+    broadcast_addr.sin_family = AF_INET; 
+    broadcast_addr.sin_port = htons(8080); 
+    
+    broadcast_addr.sin_addr.s_addr = inet_addr("127.255.255.255");
+
+    bind(udp_broadcast_socket, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr));
+}
+
+void Room::sendbroadcast_message(string message)
+{
+     sendto(udp_broadcast_socket, message.c_str(), message.size(), 0,
+      (struct sockaddr*)&broadcast_addr, sizeof(broadcast_addr)); 
 }
 
 void set_non_blocking(int sock) 
@@ -189,7 +242,8 @@ int set_up_connector(char *ipaddr, int base_port, int num_rooms, vector<pollfd>&
 
     struct sockaddr_in room_addr;
 
-    for (int i = 0; i < num_rooms; ++i) {
+    for (int i = 0; i < num_rooms; ++i) 
+    {
         int room_fd = socket(PF_INET, SOCK_STREAM, 0);
 
         room_addr.sin_family = AF_INET;
@@ -259,19 +313,11 @@ void process_room_choice(int player_fd, int room_choice, int bytes_received, vec
     int status = JOIN_SUCCESSFULLY;
     send(player_fd, &status, sizeof(status), 0);
     
-
-    //printf("Player %d joined Room %d\n", player_fd, room_choice);
-    //fflush(stdout);
-
     int port = rooms[room_choice].getPort();
     send(player_fd, &port, sizeof(port), 0);//send room port to player
 
-    //printf("2\n");
-    //fflush(stdout);
-
     int index = search_socket(ve , player_fd);
     ve.erase(ve.begin() + index);
-
 }
 
 int main(int argc, char* argv[]) 
@@ -283,11 +329,14 @@ int main(int argc, char* argv[])
     }
 
     char* ipaddr = argv[1];
+    
     int base_port = strtol(argv[2], NULL, 10);
     num_rooms = strtol(argv[3], NULL, 10);
 
     vector<pollfd> pfds;
     vector<pollfd> room_socket;
+
+    map <int , string> cliets;
 
     int server_fd = set_up_connector(ipaddr,base_port,num_rooms,pfds, room_socket);
 
@@ -307,22 +356,34 @@ int main(int argc, char* argv[])
                 if(pfds[i].fd == server_fd) // new user
                 {
                     int new_fd = accept_client(server_fd, pfds);
+                    //recv(new_fd, username, strlen(username), 0);
                     send_available_rooms(server_fd, new_fd);
                     pfds.push_back(pollfd{new_fd, POLLIN, 0});
                 }
 
                 else if (search_socket(room_socket, pfds[i].fd) != -1)
                 {
-                   rooms[pfds[i].fd].addPlayer(); 
+                    if (rooms[pfds[i].fd].isFull())
+                    {
+                        rooms[pfds[i].fd].continue_game();    
+                    }
+                    else
+                        rooms[pfds[i].fd].addPlayer(cliets[pfds[i].fd]); 
                 }
                 
                 else // message from user
                 {
-                    command com = {NOTCHOSEN, NOTCHOSEN};
+                    command com = {NOTCHOSEN, NOTCHOSEN,  ""};
                     int bytes_recieved = recv(pfds[i].fd, &com, sizeof(com), 0);
                     int command_type = com.command_type;
                     int command_data = com.data;
+                    string sender = com.sender;
 
+                    if (command_type == CHOOSE_NAME)
+                    {
+                        cliets.insert({pfds[i].fd, sender});
+                    }
+                    
                     if (command_type == CHOOSE_ROOM && 
                         rooms[command_data].getPlayerCount() < 2)
                     {
@@ -343,3 +404,4 @@ int main(int argc, char* argv[])
     close(server_fd);
     return 0;
 }
+

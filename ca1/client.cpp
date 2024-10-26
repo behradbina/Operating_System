@@ -1,4 +1,5 @@
 #include "const.h"
+using namespace std;
 
 int set_up_player(char * ipaddr, int port)
 {
@@ -32,6 +33,19 @@ void recieve_welcome_message(char buffer[], int sock, int buff_size)
 {
     read(sock, buffer, buff_size);
     printf("%s", buffer);
+}
+
+void send_username(int player_fd, char buffer[], int buf_size)
+{
+    char s [BUFFER_SIZE]  = "enter your name\n";
+
+    command com ={CHOOSE_NAME, NOTCHOSEN};
+    memset(buffer, 0, buf_size);
+    write(1, &s, sizeof(s));
+    read(0, buffer, buf_size);
+    strncpy(com.sender, buffer, MAX_USERNAME_SIZE-1);
+    com.sender[MAX_USERNAME_SIZE-1] = '\0';
+    send(player_fd, &com,  sizeof(com), 0);
 }
 
 int choose_room(int player_fd)
@@ -81,9 +95,7 @@ int connect_to_room(int room_port, char* ipaddr)
 
 void wait_till_finding_opp(int sock)
 {
-
     int game_started = 0;    
-
     do
     {
         game_started = 0;
@@ -96,7 +108,6 @@ void wait_till_finding_opp(int sock)
         }
     }
     while(game_started != GAME_START);
-    
 }
 
 void print_result_of_round(int result)
@@ -114,6 +125,34 @@ void print_result_of_round(int result)
     }
 }
 
+int setupBroadcastReceiver(int port) 
+{ 
+    int udp_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    struct sockaddr_in addr; 
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    bind(udp_fd, (struct sockaddr*)&addr, sizeof(addr)); 
+    return udp_fd;
+}
+
+void receiveBroadcastMessages(int udp_fd) 
+{ 
+    char buffer[BUFFER_SIZE]; 
+
+    while (1) 
+    { 
+        int recv_len = recvfrom(udp_fd, buffer, BUFFER_SIZE, 
+                                0, NULL, NULL);
+
+        if (recv_len > 0) 
+        { 
+            buffer[recv_len] = '\0';
+            printf("Broadcast Message: %s\n", buffer); 
+        } 
+    } 
+} 
+
 int main(int argc, char* argv[]) 
 {
     if (argc != 3) 
@@ -127,32 +166,46 @@ int main(int argc, char* argv[])
     char buffer[BUFFER_SIZE] = {0};
 
     int player_fd = set_up_player(ipaddr, port);
-
+    send_username(player_fd, buffer, BUFFER_SIZE);
     recieve_welcome_message(buffer, player_fd, BUFFER_SIZE);
 
     int room_port = choose_room(player_fd);
     disconnect_from_main_server(player_fd);
     player_fd = connect_to_room(room_port, ipaddr);
 
+
+
+
     wait_till_finding_opp(player_fd);
-    //wait until game is started
 
+    int udp_fd = setupBroadcastReceiver(room_port);
 
-    printf("infinite loop\n");
-    while (1);
-    
     
     while (1) 
     {
-        memset(buffer, 0, BUFFER_SIZE);
-        recv(player_fd, buffer, BUFFER_SIZE, 0); //Recieve message Choose Rock paper seasors
-        int choice = NOTCHOSEN;
-        scanf("%d", &choice);
-        send(player_fd, &choice, sizeof(choice), 0);
+        int message = NOTCHOSEN;
+        command player_command = {NOTCHOSEN, NOTCHOSEN}; 
+        int choice;
         int result;
 
-        recv(player_fd, &result, sizeof(result), 0);
-        print_result_of_round(result);
+        recv(udp_fd, &message, sizeof(message), 0);
+
+        if(message == CHOOSE_RPS)
+        {
+            choice = NOTCHOSEN;
+            printf("Choose rock 99 paper 100 sissors 101");
+            scanf("%d", &choice);
+            player_command.command_type = CHOOSE_RPS;
+            player_command.data = choice;
+            send(player_fd, &player_command, sizeof(player_command), 0);
+        }
+
+        if(message == INFORM_RESULT)
+        {
+            recv(player_fd, &result, sizeof(result), 0);
+            print_result_of_round(result);
+        }
+        
     }
 
     close(player_fd);
