@@ -1,0 +1,160 @@
+#include "const.h"
+
+int set_up_player(char * ipaddr, int port)
+{
+    struct sockaddr_in server_addr;
+    int server_fd;
+
+    // Setup connection to Connector or Room
+    server_addr.sin_family = AF_INET;
+    if (inet_pton(AF_INET, ipaddr, &(server_addr.sin_addr)) == -1) {
+        perror("FAILED: Invalid IPv4 address");
+        exit(EXIT_FAILURE);
+    }
+
+    if ((server_fd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("FAILED: Socket was not created");
+        exit(EXIT_FAILURE);
+    }
+
+    server_addr.sin_port = htons(port);
+    if (connect(server_fd, (struct sockaddr*)(&server_addr), sizeof(server_addr)) != 0) {
+        perror("FAILED: Connection failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Connected to server at %s:%d\n", ipaddr, port);
+    return server_fd;
+
+}
+
+void recieve_welcome_message(char buffer[], int sock, int buff_size)
+{
+    read(sock, buffer, buff_size);
+    printf("%s", buffer);
+}
+
+int choose_room(int player_fd)
+{
+    command com;
+
+    int room_choice;
+    int connection_status = FULLROOM;
+    int room_port;
+
+    while(!connection_status)
+    {
+        printf("Enter room number to join: ");
+        scanf("%d", &room_choice);
+
+        com.command_type = CHOOSE_ROOM;
+        com.data = room_choice;  
+
+
+        send(player_fd, &com, sizeof(com), 0);
+
+        read(player_fd, &connection_status, sizeof(connection_status));
+        
+        if(connection_status == JOIN_SUCCESSFULLY)
+        {
+            read(player_fd, &room_port, sizeof(room_port));
+            printf("Hello! port of the connected room : %d\n", room_port);
+        }
+    }
+    
+    printf("You are now in room number:%d!\n", room_choice);
+
+
+    return room_port;
+}
+
+void disconnect_from_main_server(int player_fd)
+{
+    close(player_fd);
+}
+
+int connect_to_room(int room_port, char* ipaddr)
+{
+    int player_fd = set_up_player(ipaddr, room_port);
+    return player_fd;
+}
+
+void wait_till_finding_opp(int sock)
+{
+
+    int game_started = 0;    
+
+    do
+    {
+        game_started = 0;
+        read(sock, &game_started, sizeof(game_started));
+        
+        if(game_started == GAME_START)
+        {
+            printf("Opponent found!\n");
+            fflush(stdout);
+        }
+    }
+    while(game_started != GAME_START);
+    
+}
+
+void print_result_of_round(int result)
+{
+    if (result == WINNER)
+    {
+        printf("You won\n");
+    }
+    else if (result == LOSER)
+    {
+        printf("You lose\n");
+    }
+    else{
+        printf("Equal\n");
+    }
+}
+
+int main(int argc, char* argv[]) 
+{
+    if (argc != 3) 
+    {
+        perror("Invalid Arguments. Usage: ./client.out {IP} {PORT}");
+        exit(EXIT_FAILURE);
+    }
+
+    char* ipaddr = argv[1];
+    int port = strtol(argv[2], NULL, 10);
+    char buffer[BUFFER_SIZE] = {0};
+
+    int player_fd = set_up_player(ipaddr, port);
+
+    recieve_welcome_message(buffer, player_fd, BUFFER_SIZE);
+
+    int room_port = choose_room(player_fd);
+    disconnect_from_main_server(player_fd);
+    player_fd = connect_to_room(room_port, ipaddr);
+
+    wait_till_finding_opp(player_fd);
+    //wait until game is started
+
+
+    printf("infinite loop\n");
+    while (1);
+    
+    
+    while (1) 
+    {
+        memset(buffer, 0, BUFFER_SIZE);
+        recv(player_fd, buffer, BUFFER_SIZE, 0); //Recieve message Choose Rock paper seasors
+        int choice = NOTCHOSEN;
+        scanf("%d", &choice);
+        send(player_fd, &choice, sizeof(choice), 0);
+        int result;
+
+        recv(player_fd, &result, sizeof(result), 0);
+        print_result_of_round(result);
+    }
+
+    close(player_fd);
+    return 0;
+}
