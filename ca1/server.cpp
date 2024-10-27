@@ -10,14 +10,14 @@ int num_rooms;
 class Room 
 {
 public:
-    Room() : room_fd(-1), port(-1), player_count(0), udp_broadcast_socket(-1) 
+    Room() : room_fd(-1), port(-1), player_count(0)
     {  
         memset(player_fds, -1, sizeof(player_fds));
         memset(choices, NOTCHOSEN, sizeof(choices));
     }
 
     
-    Room(int fd, int port) : room_fd(fd), port(port), player_count(0), udp_broadcast_socket(-1)                              
+    Room(int fd, int port) : room_fd(fd), port(port), player_count(0)                             
     {
         memset(player_fds, -1, sizeof(player_fds));
         memset(choices, NOTCHOSEN, sizeof(choices));
@@ -25,6 +25,8 @@ public:
         scores[ROOM_PLAYER] = {0};
         send_choose_rps = false;
         send_inform_message = false;
+        recieved_messages = 0;
+        //setup_broadcast_socket(); 
     }
 
     int getRoomFd() const { return room_fd; }
@@ -89,8 +91,24 @@ public:
             send(player_fds[i], &message, sizeof(message), 0);
         }
     }
-    void setup_broadcast_socket(int port);
-    void sendbroadcast_message(string message);
+    
+    int search_player(string username)
+    {
+        for (size_t i = 0; i < usernames.size(); i++)
+        {
+            if (username == usernames[i])
+            {
+                return i;
+            }
+            
+        }
+        
+        printf("sth is wrong in search player\n");
+        return -1;
+    }
+    //void setup_broadcast_socket();
+
+    //void sendbroadcast_message(string message);
     void recieve_player_choices();
     void judge(int choice0, int choice1);
     void continue_game();
@@ -99,13 +117,12 @@ public:
 private:
     int room_fd;
     int port;
+    
     int player_count;
     int player_fds[ROOM_PLAYER];
     int choices[ROOM_PLAYER];
     int scores[ROOM_PLAYER];
-    
-    int udp_broadcast_socket;
-    struct sockaddr_in broadcast_addr;
+    int recieved_messages;
 
     vector<string> usernames;
     bool game_end;
@@ -116,38 +133,36 @@ private:
 
 void Room::continue_game() 
 {
-    printf("here!\n");
-    int message = CHOOSE_RPS;
+    printf("here!");
 
-    sendto(udp_broadcast_socket, &message, sizeof(message), 0,
-      (struct sockaddr*)&broadcast_addr, sizeof(broadcast_addr));
-
-
-    printf("here!\n");
-
-    if (!send_choose_rps)
+    if(!send_choose_rps)
     {
-        memset(choices, NOTCHOSEN, sizeof(choices)); // Reset choices
-        sendToAll(CHOOSE_RPS);
+        int message = CHOOSE_RPS;
+        sendToAll(message);
         send_choose_rps = true;
     }
-
-    if (!send_inform_message)
+    else if(send_choose_rps)
     {
-        sendToAll(INFORM_RESULT);
-        send_inform_message = true;
+        printf("here2!");
+        command com;
+        recv(room_fd, &com, sizeof(com), 0);
+
+        if (com.command_type == CHOOSE_RPS)
+        {
+            printf("here3!");
+            int player_index = search_player(string(com.sender));
+            choices[player_index] = com.data;
+            recieved_messages ++;
+        }
+        
     }
-    
 
-    judge(choices[0], choices[1]);
-
-    if (send_choose_rps && send_inform_message)
-    {
+    if(recieved_messages == ROOM_PLAYER)
+    {   printf("here4!"); 
+        judge(choices[0], choices[1]);
+        recieved_messages = 0;
         send_choose_rps = false;
-        send_inform_message = false;
     }
-    
-
 }
 
 void Room::judge(int choice0, int choice1)
@@ -181,26 +196,50 @@ void Room::recieve_player_choices()
 
 }
 
-void Room::setup_broadcast_socket(int port)
-{
-    int broadcast = 1, opt = 1;
-    udp_broadcast_socket = socket(AF_INET, SOCK_DGRAM, 0);
-    setsockopt(udp_broadcast_socket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
-    setsockopt(udp_broadcast_socket, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+int setup_broadcast_socket() 
+{ 
+    struct sockaddr_in broadcast_addr;
+    int udp_broadcast_socket;
+    int broadcast = 1;
+    udp_broadcast_socket = socket(AF_INET, SOCK_DGRAM, 0); 
+    if (udp_broadcast_socket == -1)
+    {
+        perror("Failed to create UDP broadcast socket");
+        exit(EXIT_FAILURE); 
+    } // Enable broadcasting
+    if (setsockopt(udp_broadcast_socket, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast)) == -1)
+    {
+        perror("Failed to set broadcast option");
+        close(udp_broadcast_socket); exit(EXIT_FAILURE); 
+    } // Bind to any address on the broadcast port 
 
-    broadcast_addr.sin_family = AF_INET; 
-    broadcast_addr.sin_port = htons(port); 
-    
-    broadcast_addr.sin_addr.s_addr = inet_addr("127.255.255.255");
+    if (setsockopt(udp_broadcast_socket, SOL_SOCKET, SO_REUSEPORT, &broadcast, sizeof(broadcast)) == -1)
+        perror("FAILED: Making socket reusable failed");
+    /*if (setsockopt(udp_broadcast_socket, SOL_SOCKET, SO_REUSEADDR, &broadcast, sizeof(broadcast)) == -1)
+        perror("FAILED: Making socket reusable failed");*/
+        
+    struct sockaddr_in addr; addr.sin_family = AF_INET;
+    addr.sin_port = htons(BROADCAST_PORT);
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    if (bind(udp_broadcast_socket, (struct sockaddr *)&addr, sizeof(addr)) == -1)
+    { 
+        perror("Failed to bind UDP socket to INADDR_ANY"); 
+        close(udp_broadcast_socket); exit(EXIT_FAILURE); 
+    } // Configure broadcast address 
+    memset(&broadcast_addr, 0, sizeof(broadcast_addr)); 
+    broadcast_addr.sin_family = AF_INET;
+    broadcast_addr.sin_port = htons(BROADCAST_PORT);
+    broadcast_addr.sin_addr.s_addr = inet_addr("127.255.255.255"); 
 
-    bind(udp_broadcast_socket, (struct sockaddr *)&broadcast_addr, sizeof(broadcast_addr));
-}
+    return udp_broadcast_socket;
+// Local network broadcast 
+} 
 
-void Room::sendbroadcast_message(string message)
+/*void Room::sendbroadcast_message(string message)
 {
      sendto(udp_broadcast_socket, message.c_str(), message.size(), 0,
       (struct sockaddr*)&broadcast_addr, sizeof(broadcast_addr)); 
-}
+}*/
 
 void set_non_blocking(int sock) 
 {
@@ -282,6 +321,8 @@ int accept_client(int server_fd, vector<pollfd>& pfds)
     set_non_blocking(new_fd);
     write(1, &new_fd, sizeof(new_fd));
     pfds.push_back(pollfd{new_fd, POLLIN, 0});
+
+    
     return new_fd;
 }
 
@@ -340,7 +381,7 @@ int main(int argc, char* argv[])
     map <int , string> cliets;
 
     int server_fd = set_up_connector(ipaddr,base_port,num_rooms,pfds, room_socket);
-
+    setup_broadcast_socket();
     pfds.push_back(pollfd{server_fd, POLLIN, 0});
 
     while (1) 
@@ -364,6 +405,7 @@ int main(int argc, char* argv[])
 
                 else if (search_socket(room_socket, pfds[i].fd) != -1)
                 {
+                    printf("in the else if\n");
                     if (rooms[pfds[i].fd].isFull())
                     {
                         rooms[pfds[i].fd].continue_game();    
