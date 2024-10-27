@@ -71,6 +71,7 @@ public:
 
         if(player_count ==ROOM_PLAYER)
         {
+            sendToAll(GAME_START);
             continue_game();
         }
     }
@@ -188,7 +189,7 @@ void Room::setup_broadcast_socket(int port)
     setsockopt(udp_broadcast_socket, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
 
     broadcast_addr.sin_family = AF_INET; 
-    broadcast_addr.sin_port = htons(8080); 
+    broadcast_addr.sin_port = htons(port); 
     
     broadcast_addr.sin_addr.s_addr = inet_addr("127.255.255.255");
 

@@ -131,7 +131,7 @@ int setupBroadcastReceiver(int port)
     struct sockaddr_in addr; 
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port);
-    addr.sin_addr.s_addr = htonl(INADDR_ANY); 
+    addr.sin_addr.s_addr = inet_addr("127.255.255.255");
     bind(udp_fd, (struct sockaddr*)&addr, sizeof(addr)); 
     return udp_fd;
 }
@@ -151,6 +151,22 @@ void receiveBroadcastMessages(int udp_fd)
             printf("Broadcast Message: %s\n", buffer); 
         } 
     } 
+} 
+
+int receive_broadcast_messages(int udp_fd) 
+{ 
+    int message; 
+
+     
+    int recv_len = recv(udp_fd, &message, sizeof(message), 0);
+
+    if (recv_len > 0) 
+    { 
+        printf("message is recieved!\n");
+        return message;
+    } 
+
+    return NOTCHOSEN;
 } 
 
 int main(int argc, char* argv[]) 
@@ -173,22 +189,22 @@ int main(int argc, char* argv[])
     disconnect_from_main_server(player_fd);
     player_fd = connect_to_room(room_port, ipaddr);
 
-
-
-
     wait_till_finding_opp(player_fd);
 
     int udp_fd = setupBroadcastReceiver(room_port);
 
-    
+    printf("udp_fd: %d\n", udp_fd);
+
+    int m = receive_broadcast_messages(udp_fd);
+    printf("m: %d\n", m);
     while (1) 
     {
+
         int message = NOTCHOSEN;
         command player_command = {NOTCHOSEN, NOTCHOSEN}; 
         int choice;
         int result;
 
-        recv(udp_fd, &message, sizeof(message), 0);
 
         if(message == CHOOSE_RPS)
         {
