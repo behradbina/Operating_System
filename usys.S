@@ -7,6 +7,12 @@
     movl $SYS_ ## name, %eax; \
     int $T_SYSCALL; \
     ret
+// In usys.S
+.globl my_syscall
+my_syscall:
+    movl $24, %eax  // Load the system call number into eax
+    int $64         // Trigger the interrupt to call the system call
+    ret
 
 SYSCALL(fork)
 SYSCALL(exit)

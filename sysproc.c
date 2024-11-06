@@ -89,3 +89,13 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+// In sysproc.c or your own file
+
+
+
+// Example system call
+int sys_my_syscall(void) {
+    // This can be anything, such as printing a message
+    //printf(1, "My system call was invoked!\n");
+    return 0;  // You can return any value, or multiple values
+}
