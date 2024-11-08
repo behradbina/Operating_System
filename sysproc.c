@@ -11,6 +11,7 @@
 #include "file.h"
 #include "fcntl.h"
 #define MAXPATH 1024
+
 int sys_fork(void)
 {
   return fork();
@@ -249,6 +250,7 @@ int sys_move_file(void)
 
   return 0; // Success
 }
+
 int sys_sort_syscalls()
 {
   int pid;
@@ -286,4 +288,19 @@ int sys_sort_syscalls()
     }
   }
   return -1; 
+}
+
+void sys_create_palindrome(int num)
+{
+  int temp = num; 
+  int reverse = 0;
+
+  while (temp > 0) 
+    reverse = reverse * 10 + (temp % 10); temp /= 10; 
+     
+  int palindrome = num;
+  int multiplier = 1;
+
+  while (reverse > 0)  
+    palindrome = palindrome * 10 + (reverse % 10); reverse /= 10;
 }
