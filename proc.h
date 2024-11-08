@@ -1,4 +1,7 @@
 // Per-CPU state
+#ifndef PROC_H
+#define PROC_H
+#include "spinlock.h" 
 #define SYS_MAX_SIZE 100
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -10,6 +13,7 @@ struct cpu {
   int intena;                  // Were interrupts enabled before pushcli?
   struct proc *proc;           // The process running on this cpu or null
 };
+
 
 extern struct cpu cpus[NCPU];
 extern int ncpu;
@@ -51,6 +55,7 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
   int systemcalls[SYS_MAX_SIZE];
+  int numsystemcalls;
 };
 
 // Process memory is laid out contiguously, low addresses first:
@@ -58,3 +63,9 @@ struct proc {
 //   original data and bss
 //   fixed-size stack
 //   expandable heap
+ struct  ptable_struct {
+    struct spinlock lock;
+    struct proc proc[NPROC];
+};
+extern struct ptable_struct ptable;
+#endif
