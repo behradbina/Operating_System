@@ -9,6 +9,14 @@
     ret
 // In usys.S
 
+#define SYSCALL2(name) \
+  .globl name; \
+  name: \
+    movl $SYS_ ## name, %eax; \
+    movl ۴(%esp) ## name, %ecx; \
+    int $T_SYSCALL; \
+    ret
+
 
 SYSCALL(fork)
 SYSCALL(exit)
@@ -33,4 +41,4 @@ SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(move_file)
 SYSCALL(sort_syscalls)
-
+SYSCALL2(create_palindrome)

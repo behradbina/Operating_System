@@ -290,17 +290,28 @@ int sys_sort_syscalls()
   return -1; 
 }
 
-void sys_create_palindrome(int num)
+void sys_create_palindrome(void)
 {
-  int temp = num; 
+  int num;
+  asm volatile("movl %%ecx, %0": "=r"(num));
+   
   int reverse = 0;
 
+  int temp = num;
   while (temp > 0) 
-    reverse = reverse * 10 + (temp % 10); temp /= 10; 
-     
+  {
+    reverse = reverse * 10 + (temp % 10); 
+    temp /= 10; 
+  }
+
   int palindrome = num;
   int multiplier = 1;
 
-  while (reverse > 0)  
-    palindrome = palindrome * 10 + (reverse % 10); reverse /= 10;
+  while (reverse > 0) 
+  {
+    palindrome = palindrome * 10 + (reverse % 10);
+    reverse /= 10;
+  }
+
+  cprintf("%d\n", palindrome); 
 }

@@ -133,7 +133,7 @@ static int (*syscalls[])(void) = {
 [SYS_my_syscall]   sys_my_syscall, 
 [SYS_move_file]   sys_move_file,
 [SYS_sort_syscalls] sys_sort_syscalls,
-[SYS_create_palindrome] sys_create_palindrome,
+[SYS_create_palindrome] (int(*)(void))sys_create_palindrome,
 };
 
 void
