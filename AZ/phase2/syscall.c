@@ -106,7 +106,7 @@ extern int sys_uptime(void);
 extern int sys_my_syscall(void);
 extern int sys_move_file(void);
 extern int sys_sort_syscalls(void);
-
+extern int sys_get_most_invoked_syscalls(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -133,6 +133,7 @@ static int (*syscalls[])(void) = {
 [SYS_my_syscall]   sys_my_syscall, 
 [SYS_move_file]   sys_move_file,
 [SYS_sort_syscalls] sys_sort_syscalls,
+[SYS_get_most_invoked_syscalls] sys_get_most_invoked_syscalls,
 
 };
 

@@ -39,3 +39,4 @@ void free(void*);
 int atoi(const char*);
 int move_file(const char *src_file, const char *dest_dir);
 int sort_syscalls(int pid);
+int get_most_invoked_syscalls(int pid);

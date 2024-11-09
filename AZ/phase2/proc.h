@@ -67,5 +67,6 @@ struct proc {
     struct spinlock lock;
     struct proc proc[NPROC];
 };
-extern struct ptable_struct ptable;
+
+int sort_uniqe_procces(int pid);
 #endif

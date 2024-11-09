@@ -185,6 +185,7 @@ UPROGS=\
 	_encode\
 	_move_file\
 	_sorttest\
+	_get_mis_test\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

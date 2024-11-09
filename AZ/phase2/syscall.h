@@ -23,3 +23,4 @@
 #define SYS_my_syscall 24
 #define SYS_move_file 26
 #define SYS_sort_syscalls 27
+#define SYS_get_most_invoked_syscalls 28

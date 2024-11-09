@@ -10,7 +10,9 @@
 #include "fs.h"
 #include "file.h"
 #include "fcntl.h"
-#define MAXPATH 1024
+
+#define MAXPATH 1024 
+
 int sys_fork(void)
 {
   return fork();
@@ -105,34 +107,15 @@ int sys_sort_syscalls()
   {
     return -1; // Return error if pid is not provided
   }
-  struct proc *p;
-  int i, j;
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  return sort_uniqe_procces(pid);
+} 
+int sys_get_most_invoked_syscalls()
+{
+  int pid;
+  if (argint(0, &pid) < 0)
   {
-    if (p->pid == pid)
-    {
-   
-      for (i = 0; i < p->numsystemcalls - 1; i++)
-      {
-        for (j = i + 1; j < p->numsystemcalls; j++)
-        {
-          if (p->systemcalls[i] > p->systemcalls[j])
-          {
-            
-            int temp = p->systemcalls[i];
-            p->systemcalls[i] = p->systemcalls[j];
-            p->systemcalls[j] = temp;
-          }
-        }
-      }
-      for (i = 0; i < p->numsystemcalls; i++)
-      { 
-        cprintf("%d ", p->systemcalls[i]);
-      }
-      cprintf("\n");
-
-      return 0; 
-    }
+    return -1; // Return error if pid is not provided
   }
-  return -1; 
-}
+  return get_max_invoked(pid);
+} 
+
