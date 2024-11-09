@@ -13,7 +13,7 @@
   .globl name; \
   name: \
     movl $SYS_ ## name, %eax; \
-    movl ۴(%esp) ## name, %ecx; \
+    movl 4(%esp) ## name, %ecx; \
     int $T_SYSCALL; \
     ret
 
