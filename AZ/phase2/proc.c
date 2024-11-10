@@ -627,3 +627,20 @@ int get_max_invoked(int pid)
   cprintf("Pid not found \n");
   return -1;
 }
+
+
+int make_create_palindrom(long long int x)
+{
+  cprintf("Input number is : %d \n" , x);
+  long long int num = x;
+  long long int comp = 0;
+  while (x != 0)
+  {
+    comp = comp * 10 + x % 10;
+    x = x / 10;
+    num = num * 10;
+  }
+  num = num + comp;
+  cprintf("palindrom value for given input is : %d \n", num);
+  return 0;
+}

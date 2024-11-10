@@ -33,5 +33,6 @@ SYSCALL(sleep)
 SYSCALL(uptime)
 SYSCALL(move_file)
 SYSCALL(sort_syscalls)
+SYSCALL(create_palindrom)
 SYSCALL(get_most_invoked_syscalls)
 

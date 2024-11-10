@@ -120,6 +120,10 @@ void            userinit(void);
 int             wait(void);
 void            wakeup(void*);
 void            yield(void);
+int             make_create_palindrom(long long int x);
+int             sort_uniqe_procces(int pid);
+int             get_max_invoked(int pid);
+int             move_file(char* path_src, char* path_des);
 
 // swtch.S
 void            swtch(struct context**, struct context*);

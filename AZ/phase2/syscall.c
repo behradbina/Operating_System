@@ -107,6 +107,7 @@ extern int sys_my_syscall(void);
 extern int sys_move_file(void);
 extern int sys_sort_syscalls(void);
 extern int sys_get_most_invoked_syscalls(void);
+extern int sys_create_palindrom(void);
 
 static int (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -134,7 +135,7 @@ static int (*syscalls[])(void) = {
 [SYS_move_file]   sys_move_file,
 [SYS_sort_syscalls] sys_sort_syscalls,
 [SYS_get_most_invoked_syscalls] sys_get_most_invoked_syscalls,
-
+[SYS_create_palindrom] sys_create_palindrom,
 };
 
 void
@@ -147,6 +148,7 @@ syscall(void)
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     curproc->tf->eax = syscalls[num]();
   } else {
+    cprintf("%d\n" , num);
     cprintf("%d %s: unknown sys call %d\n",
             curproc->pid, curproc->name, num);
     curproc->tf->eax = -1;

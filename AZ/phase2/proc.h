@@ -68,5 +68,4 @@ struct proc {
     struct proc proc[NPROC];
 };
 
-int sort_uniqe_procces(int pid);
 #endif

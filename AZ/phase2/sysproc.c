@@ -119,3 +119,8 @@ int sys_get_most_invoked_syscalls()
   return get_max_invoked(pid);
 } 
 
+int sys_create_palindrom(void){
+  long long int num = myproc()->tf->ebx;
+  return make_create_palindrom(num);
+}
+
