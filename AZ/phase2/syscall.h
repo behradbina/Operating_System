@@ -20,7 +20,8 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
-#define SYS_create_palindrom 22
+#define SYS_create_palindrom 22 
+#define SYS_list_all_processes 23
 #define SYS_my_syscall 24
 #define SYS_move_file 26
 #define SYS_sort_syscalls 27

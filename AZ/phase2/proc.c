@@ -643,4 +643,9 @@ int make_create_palindrom(long long int x)
   num = num + comp;
   cprintf("palindrom value for given input is : %d \n", num);
   return 0;
+} 
+
+int list_all_processes_(void)
+{
+  
 }

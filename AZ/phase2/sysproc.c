@@ -120,7 +120,11 @@ int sys_get_most_invoked_syscalls()
 } 
 
 int sys_create_palindrom(void){
-  long long int num = myproc()->tf->ebx;
+  long long int num = myproc()->tf->ecx;
   return make_create_palindrom(num);
 }
 
+int sys_list_all_processes(void)
+{
+   
+}

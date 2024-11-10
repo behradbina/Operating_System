@@ -34,5 +34,6 @@ SYSCALL(uptime)
 SYSCALL(move_file)
 SYSCALL(sort_syscalls)
 SYSCALL(create_palindrom)
-SYSCALL(get_most_invoked_syscalls)
+SYSCALL(get_most_invoked_syscalls) 
+SYSCALL(list_all_processes)
 

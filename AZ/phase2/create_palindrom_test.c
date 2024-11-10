@@ -11,12 +11,13 @@ int main(int argc, char *argv[]) {
         exit();
     }
     printf(2,"try to make palindrome ... \n");
-    int num = atoi(argv[1]);
+    long long int num = atoi(argv[1]);
+    long long int recoveryNum = 0;
     asm volatile (
-        "movl %0, %%ebx\n"     
-        :
+        "movl %%ecx, %0;"     
+        "movl %1, %%ecx;"     
+        : "=r" (recoveryNum)
         : "r" (num)
-        : "%ebx"
     );
 
     
@@ -27,5 +28,10 @@ int main(int argc, char *argv[]) {
     } else {
         printf(2, "Error.\n");
     }
+    asm volatile (
+        "movl %0, %%ecx;"    
+        :    
+        : "r" (recoveryNum)
+    );
     exit();
 }
