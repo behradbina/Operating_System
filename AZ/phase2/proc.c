@@ -590,9 +590,9 @@ int get_max_invoked(int pid)
           }
         }
       }
-     int count[30];
-     memset(count,0,30);
-     for(int i=0;i<30;i++){
+     int count[300];
+     memset(count,0,300);
+     for(int i=0;i<300;i++){
       count[i]=0;
      // cprintf("%d \n",count[i]);
       
@@ -615,13 +615,13 @@ int get_max_invoked(int pid)
       cprintf("no syscall found \n");
       return -1;
      }
-    //     for(int i=0;i<30;i++){
-    //  if(count[i]==max){
-    //    cprintf("num of the system call is %d and it invoked is %d \n",i,count[i]);
-    //    return  i;
-    //  }
-    //  }
-      cprintf("num of the system call is %d and it invoked is %d \n",max_index,count[max_index]);
+        for(int i=0;i<30;i++){
+     if(count[i]==max){
+       cprintf("num of the system call is %d and it invoked is %d \n",i,count[i]);
+       return  i;
+     }
+     }
+      // cprintf("num of the system call is %d and it invoked is %d \n",max_index,count[max_index]);
       return 0; 
     }
   }
@@ -648,5 +648,19 @@ int make_create_palindrom(long long int x)
 
 int list_all_processes_(void)
 {
-  
+  struct proc *p;
+  int i, j;
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid != 0)
+    {
+      cprintf("procces with pid : %d have these system calls : \n" , p->pid);
+      for (i = 0; i < p->numsystemcalls - 1; i++)
+      {
+        cprintf("system call number %d is %d \n" , i+1 , p->systemcalls[i]);
+      }
+      cprintf("sum of all system calls is : %d \n" , p->numsystemcalls);
+    }
+  }
+  return 0;
 }
