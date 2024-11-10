@@ -615,12 +615,13 @@ int get_max_invoked(int pid)
       cprintf("no syscall found \n");
       return -1;
      }
-        for(int i=0;i<30;i++){
-     if(count[i]==max){
-       cprintf("num of the system call is %d and it invoked is %d \n",i,count[i]);
-       return  i;
-     }
-     }
+    //     for(int i=0;i<30;i++){
+    //  if(count[i]==max){
+    //    cprintf("num of the system call is %d and it invoked is %d \n",i,count[i]);
+    //    return  i;
+    //  }
+    //  }
+      cprintf("num of the system call is %d and it invoked is %d \n",max_index,count[max_index]);
       return 0; 
     }
   }

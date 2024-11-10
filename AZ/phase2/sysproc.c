@@ -126,5 +126,5 @@ int sys_create_palindrom(void){
 
 int sys_list_all_processes(void)
 {
-   
+  return list_all_processes_();
 }
