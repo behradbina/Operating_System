@@ -89,14 +89,10 @@ int sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
-// In sysproc.c or your own file
 
-// Example system call
 int sys_my_syscall(void)
 {
-  // This can be anything, such as printing a message
-  // printf(1, "My system call was invoked!\n");
-  return 0; // You can return any value, or multiple values
+  return 0; 
 }
 
 
@@ -105,7 +101,7 @@ int sys_sort_syscalls()
   int pid;
   if (argint(0, &pid) < 0)
   {
-    return -1; // Return error if pid is not provided
+    return -1; 
   }
   return sort_uniqe_procces(pid);
 } 
@@ -114,7 +110,7 @@ int sys_get_most_invoked_syscalls()
   int pid;
   if (argint(0, &pid) < 0)
   {
-    return -1; // Return error if pid is not provided
+    return -1; 
   }
   return get_max_invoked(pid);
 } 
