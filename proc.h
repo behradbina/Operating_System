@@ -57,7 +57,7 @@ struct proc {
   int systemcalls[SYS_MAX_SIZE];
   int numsystemcalls;
 };
-
+ 
 // Process memory is laid out contiguously, low addresses first:
 //   text
 //   original data and bss
@@ -67,5 +67,5 @@ struct proc {
     struct spinlock lock;
     struct proc proc[NPROC];
 };
-extern struct ptable_struct ptable;
+
 #endif

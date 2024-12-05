@@ -183,9 +183,11 @@ UPROGS=\
 	_zombie\
 	_decode\
 	_encode\
-	_movetest\
+	_move_file_test\
 	_sorttest\
-	_createpalindrometest\
+	_get_mis_test\
+	_create_palindrom_test\
+	_list_all_processes_test\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
