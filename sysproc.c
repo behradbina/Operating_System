@@ -95,7 +95,6 @@ int sys_my_syscall(void)
   return 0; 
 }
 
-
 int sys_sort_syscalls()
 {
   int pid;
@@ -105,6 +104,7 @@ int sys_sort_syscalls()
   }
   return sort_uniqe_procces(pid);
 } 
+
 int sys_get_most_invoked_syscalls()
 {
   int pid;
@@ -124,4 +124,27 @@ int sys_list_all_processes(void)
 {
   cprintf("list all of active processes : \n");
   return list_all_processes_();
+}
+
+int sys_change_schedular_queue(void)
+{
+  int queue_number, pid;
+  if(argint(0, &pid) < 0 || argint(1, &queue_number) < 0)
+    return -1;
+
+  if(queue_number < ROUND_ROBIN || queue_number > SJF)
+    return -1;
+
+  return change_Q(pid, queue_number);
+}
+
+int sys_show_process_info(void)
+{
+  show_process_info();
+  return 0;
+}
+
+int sys_set_proc_sjf_params(void)
+{
+  return 0;
 }

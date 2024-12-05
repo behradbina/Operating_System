@@ -139,13 +139,9 @@ found:
 
   p->sched_info.sjf.arrival_time = ticks;
   p->sched_info.queue = UNSET;
-  p->sched_info.sjf.priority = 3;
-  p->sched_info.sjf.priority_ratio = 1;
-  p->sched_info.sjf.arrival_time_ratio = 1;
-  p->sched_info.sjf.executed_cycle = 0;
-  p->sched_info.sjf.executed_cycle_ratio = 1;
+  p->sched_info.sjf.confidence = 50;
+  p->sched_info.sjf.burst_time = 2;
   p->sched_info.sjf.process_size = p->sz;
-  p->sched_info.sjf.process_size_ratio = 1;
   p->start_time = ticks;
 
   return p;
@@ -682,6 +678,21 @@ int make_create_palindrom(long long int x)
   return 0;
 } 
 
+int num_digits(int n) {
+  int num = 0;
+  while(n!= 0) {
+    n/=10;
+    num += 1;
+  }
+  return num;
+}
+
+void space(int count)
+{
+  for(int i = 0; i < count; ++i)
+    cprintf(" ");
+}
+
 int list_all_processes_(void)
 {
   struct proc *p;
@@ -728,4 +739,58 @@ int change_Q(int pid, int new_queue)
   }
   release(&ptable.lock);
   return old_queue;
+}
+
+void show_process_info()
+{
+
+  static char *states[] = {
+      [UNUSED] "unused",
+      [EMBRYO] "embryo",
+      [SLEEPING] "sleeping",
+      [RUNNABLE] "runnable",
+      [RUNNING] "running",
+      [ZOMBIE] "zombie"};
+
+  static int columns[] = {16, 8, 9, 8, 8, 8, 9, 8};
+  cprintf("Process_Name    PID     State    wait time   Confidence  burst time consequtive run  arrival\n"
+          "------------------------------------------------------------------------------------------------------\n");
+
+  struct proc *p;
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state == UNUSED)
+      continue;
+
+    const char *state;
+    if (p->state >= 0 && p->state < NELEM(states) && states[p->state])
+      state = states[p->state];
+    else
+      state = "unknown state";
+
+    cprintf("%s", p->name);
+    space(columns[0] - strlen(p->name));
+
+    cprintf("%d", p->pid);
+    space(columns[1] - num_digits(p->pid));
+
+    cprintf("%s", state);
+    space(columns[2] - strlen(state));
+
+    cprintf("%d", p->sched_info.sjf.confidence);
+    space(columns[3] - num_digits(p->sched_info.sjf.confidence));
+
+    cprintf("%d", p->sched_info.sjf.burst_time);
+    space(columns[4] - num_digits(p->sched_info.sjf.burst_time));
+
+    // cprintf("%d", p->sched_info.sjf.priority);
+    // space(columns[6] - num_digits(p->sched_info.sjf.priority));
+
+    //wait time algorithm???
+
+    cprintf("%d", p->sched_info.sjf.arrival_time);
+    space(columns[7] - num_digits(p->sched_info.sjf.arrival_time));
+
+    cprintf("\n");
+  }
 }

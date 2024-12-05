@@ -26,3 +26,7 @@
 #define SYS_move_file 26
 #define SYS_sort_syscalls 27
 #define SYS_get_most_invoked_syscalls 28
+
+#define SYS_show_process_info 29
+#define SYS_change_schedular_queue 30
+#define SYS_set_proc_sjf_params 31

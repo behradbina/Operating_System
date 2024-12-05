@@ -36,4 +36,6 @@ SYSCALL(sort_syscalls)
 SYSCALL(create_palindrom)
 SYSCALL(get_most_invoked_syscalls) 
 SYSCALL(list_all_processes)
-
+SYSCALL(change_schedular_queue)
+SYSCALL(show_process_info)
+SYSCALL(set_proc_sjf_params)
