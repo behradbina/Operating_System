@@ -64,6 +64,31 @@ myproc(void) {
   return p;
 }
 
+int change_Q(int pid, int new_queue);
+struct proc *
+roundrobin(struct proc *last_scheduled);
+struct proc *
+fcfs(void);
+
+
+struct proc *
+roundrobin(struct proc *last_scheduled)
+{
+  struct proc *p = last_scheduled;
+  for (;;)
+  {
+    p++;
+    if (p >= &ptable.proc[NPROC])
+      p = ptable.proc;
+
+    if (p->state == RUNNABLE && p->sched_info.queue == ROUND_ROBIN)
+      return p;
+
+    if (p == last_scheduled)
+      return 0;
+  }
+}
+
 //PAGEBREAK: 32
 // Look in the process table for an UNUSED proc.
 // If found, change state to EMBRYO and initialize
@@ -111,6 +136,17 @@ found:
   p->context = (struct context*)sp;
   memset(p->context, 0, sizeof *p->context);
   p->context->eip = (uint)forkret;
+
+  p->sched_info.sjf.arrival_time = ticks;
+  p->sched_info.queue = UNSET;
+  p->sched_info.sjf.priority = 3;
+  p->sched_info.sjf.priority_ratio = 1;
+  p->sched_info.sjf.arrival_time_ratio = 1;
+  p->sched_info.sjf.executed_cycle = 0;
+  p->sched_info.sjf.executed_cycle_ratio = 1;
+  p->sched_info.sjf.process_size = p->sz;
+  p->sched_info.sjf.process_size_ratio = 1;
+  p->start_time = ticks;
 
   return p;
 }
@@ -663,4 +699,33 @@ int list_all_processes_(void)
     }
   }
   return 0;
+}
+
+int change_Q(int pid, int new_queue)
+{
+  struct proc *p;
+  int old_queue = -1;
+
+  if (new_queue == UNSET)
+  {
+    if (pid == 1)
+      new_queue = ROUND_ROBIN;
+    else if (pid > 1)
+      new_queue = FCFS;
+    else
+      return -1;
+  }
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid)
+    {
+      old_queue = p->sched_info.queue;
+      p->sched_info.queue = new_queue;
+
+      p->sched_info.arrival_queue_time = ticks;
+    }
+  }
+  release(&ptable.lock);
+  return old_queue;
 }

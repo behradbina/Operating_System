@@ -37,7 +37,27 @@ struct context {
   uint eip;
 };
 
+enum schedqueue {UNSET, ROUND_ROBIN, FCFS, SJF};
+
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
+
+struct sjf_info {
+  int priority;
+  float priority_ratio;
+  int arrival_time;
+  float arrival_time_ratio;
+  float executed_cycle;
+  float executed_cycle_ratio;
+  int process_size;
+  float process_size_ratio;
+};
+
+struct schedinfo {
+  enum schedqueue queue;
+  int last_run;
+  struct sjf_info sjf;
+  int arrival_queue_time;
+};
 
 // Per-process state
 struct proc {
@@ -54,8 +74,11 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  uint start_time;             //Process start tick
   int systemcalls[SYS_MAX_SIZE];
   int numsystemcalls;
+
+  struct schedinfo sched_info;
 };
  
 // Process memory is laid out contiguously, low addresses first:
