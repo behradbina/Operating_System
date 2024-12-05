@@ -23,7 +23,6 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
-void create_palindrome(int); 
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -38,5 +37,8 @@ void* memset(void*, int, uint);
 void* malloc(uint);
 void free(void*);
 int atoi(const char*);
+int create_palindrom(int num);
 int move_file(const char *src_file, const char *dest_dir);
-int sort_syscalls(int pid);
+int sort_syscalls(int pid); 
+int get_most_invoked_syscalls(int pid);
+int list_all_processes(void);

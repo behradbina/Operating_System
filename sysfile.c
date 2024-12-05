@@ -16,6 +16,8 @@
 #include "file.h"
 #include "fcntl.h"
 
+
+
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
@@ -440,5 +442,75 @@ sys_pipe(void)
   }
   fd[0] = fd0;
   fd[1] = fd1;
+  return 0;
+}
+
+int sys_move_file(void)
+{
+  char *path_src, *path_des;
+  struct inode *ip_src, *dp_des, *dp_src;
+  char name[DIRSIZ];
+  uint off;
+  struct dirent de;
+
+  if (argstr(0, &path_src) < 0 || argstr(1, &path_des) < 0){
+    return -1;
+  }
+
+  cprintf("Source path: %s\n", path_src);
+  cprintf("Destination directory: %s\n", path_des);
+
+  ip_src = namei(path_src);
+  if (ip_src == 0)
+  {
+    cprintf("Error: Source file not found\n");
+    return -1;
+  }
+  if (ip_src->type != T_FILE)
+  {
+    cprintf("Error: Source is not a regular file\n");
+    return -1;
+  }
+
+  begin_op();
+  if ((dp_src = nameiparent(path_src, name)) == 0)
+  {
+    end_op();
+    return -1;
+  }
+
+  if ((ip_src = dirlookup(dp_src, name, &off)) == 0)
+  {
+    end_op();
+    return -1;
+  }
+
+  if ((dp_des = namei(path_des)) == 0)
+  {
+    end_op();
+    return -1;
+  }
+
+  ilock(dp_des);
+  if (dp_des->dev != ip_src->dev || dirlink(dp_des, name, ip_src->inum) < 0)
+  {
+    iunlockput(dp_des);
+    end_op();
+    return -1;
+  }
+  iunlockput(dp_des);
+
+  ilock(dp_src);
+
+  memset(&de, 0, sizeof(de));
+  if (writei(dp_src, (char *)&de, off, sizeof(de)) != sizeof(de))
+  {
+    iunlockput(dp_src);
+    end_op();
+    return -1;
+  }
+  iunlockput(dp_src);
+
+  end_op();
   return 0;
 }
