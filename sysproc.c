@@ -146,5 +146,13 @@ int sys_show_process_info(void)
 
 int sys_set_proc_sjf_params(void)
 {
+  int pid, burst_time, confidence;
+  if(argint(0, &pid) < 0 ||
+     argint(1, &burst_time) < 0 ||
+     argint(2, &confidence) < 0
+    ){
+    return -1;
+  }
+  set_proc_sjf_params_(pid, burst_time, confidence);
   return 0;
 }

@@ -794,3 +794,22 @@ void show_process_info()
     cprintf("\n");
   }
 }
+
+int set_proc_sjf_params_(int pid, int burst_time, int confidence)
+{
+  struct proc *p;
+
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid)
+    {
+      p->sched_info.sjf.burst_time = burst_time;
+      p->sched_info.sjf.confidence = confidence;
+      release(&ptable.lock);
+      return 0;
+    }
+  }
+  release(&ptable.lock);
+  return -1;
+}
