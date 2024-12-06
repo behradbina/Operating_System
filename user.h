@@ -44,4 +44,4 @@ int get_most_invoked_syscalls(int pid);
 int list_all_processes(void);
 int change_schedular_queue(void);
 int show_process_info(void);
-int set_proc_sjf_params(void);
+int set_proc_sjf_params(int pid , int burst_time, int confidence);
