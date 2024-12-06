@@ -806,6 +806,7 @@ int set_proc_sjf_params_(int pid, int burst_time, int confidence)
     {
       p->sched_info.sjf.burst_time = burst_time;
       p->sched_info.sjf.confidence = confidence;
+      cprintf("%d %d %d \n",pid,p->sched_info.sjf.burst_time , p->sched_info.sjf.confidence);
       release(&ptable.lock);
       return 0;
     }
