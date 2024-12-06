@@ -44,7 +44,7 @@ enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 struct sjf_info {
   int priority;
   int arrival_time;
-  float burst_time;
+  int  burst_time;
   int confidence;
   float process_size;
 };
