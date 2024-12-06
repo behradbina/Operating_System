@@ -188,6 +188,7 @@ UPROGS=\
 	_get_mis_test\
 	_create_palindrom_test\
 	_list_all_processes_test\
+	_testsechduler\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
