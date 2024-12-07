@@ -268,7 +268,7 @@ void exit(void)
   if (curproc == initproc)
     panic("init exiting");
 
-  // Close all open files.
+  // Close ak open files.
   for (fd = 0; fd < NOFILE; fd++)
   {
     if (curproc->ofile[fd])
@@ -364,16 +364,29 @@ int wait(void)
 struct proc *
 roundrobin()
 {
+  acquire(&ptable.lock);
   struct proc *p = ptable.proc;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
     if (p->state != RUNNABLE)
       continue;
-    else if (p->sched_info.queue == ROUND_ROBIN)
+    if (p->sched_info.queue == ROUND_ROBIN)
     {
-      return p;
+      mycpu()->proc = p;
+      switchuvm(p);
+
+      p->state = RUNNING;
+      // add 0.1 to executed_cycle for each tick
+
+      swtch(&(mycpu()->scheduler), p->context);
+      switchkvm();
+
+      // Process is done running for now.
+      // It should have changed its p->state before coming back.
+      mycpu()->proc = 0;
     }
   }
+  release(&ptable.lock);
 }
 // Simple random number generator
 unsigned int rand(void)
@@ -405,109 +418,113 @@ struct proc *sjf(struct proc *last_scheduled)
   return min_proc;
 }
 
-void scheduler(void)
-{
-  struct proc *p;
-  struct cpu *c = mycpu();
-  c->proc = 0;
-  int min = -1;
-  struct proc *p_sjf;
-  for (;;)
-  {
-    // Enable interrupts on this processor.
-    sti();
-
-    // Loop over process table looking for process to run.
-    acquire(&ptable.lock);
-    struct proc *last_scheduled = 0;
-
-    for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-    {
-      if (p->state != RUNNABLE)
-        continue;
-     // cprintf("%d \n",p->sched_info.queue);  
-      if (p->sched_info.queue==ROUND_ROBIN)
-      {
-        last_scheduled = p;
-
-        // Switch to chosen process.  It is the process's job
-        // to release ptable.lock and then reacquire it
-        // before jumping back to us.
-        c->proc = p;
-        switchuvm(p);
-        p->state = RUNNING;
-
-        swtch(&(c->scheduler), p->context);
-        switchkvm();
-
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-      }
-
-      /* code */
-    }
-    release(&ptable.lock);
-  }
-}
-
 // void scheduler(void)
 // {
 //   struct proc *p;
-
 //   struct cpu *c = mycpu();
-
 //   c->proc = 0;
-
+//   int min = -1;
+//   struct proc *p_sjf;
 //   for (;;)
 //   {
+//     // Enable interrupts on this processor.
 //     sti();
 
 //     // Loop over process table looking for process to run.
 //     acquire(&ptable.lock);
+//     struct proc *last_scheduled = 0;
 
-//     p = roundrobin();
+//     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+//     {
+//       if (p->state != RUNNABLE)
+//         continue;
+//      // cprintf("%d \n",p->sched_info.queue);  
+//       if (p->sched_info.queue==ROUND_ROBIN)
+//       {
+//         last_scheduled = p;
 
-//     // if (!p)
-//     // {
-//     //   p = sjf();
-//     // }
-//     // else
-//     // {
+//         // Switch to chosen process.  It is the process's job
+//         // to release ptable.lock and then reacquire it
+//         // before jumping back to us.
+//         c->proc = p;
+//         switchuvm(p);
+//         p->state = RUNNING;
 
-//     //   p = sjf(last_scheduled_RR);
-//     //   // if (!p)
-//     //   // {
-//     //   //   p = bestjobfirst();
-//     //   //   if (!p)
-//     //   //   {
-//     //   //     release(&ptable.lock);
-//     //   //     continue;
-//     //   //   }
-//     //   // }
-//     // }
+//         swtch(&(c->scheduler), p->context);
+//         switchkvm();
 
-//     // Switch to chosen process.  It is the process's job
-//     // to release ptable.lock and then reacquire it
-//     // before jumping back to us.
+//         // Process is done running for now.
+//         // It should have changed its p->state before coming back.
+//         c->proc = 0;
+//       }
 
-//     c->proc = p;
-//     switchuvm(p);
-
-//     p->state = RUNNING;
-//     // add 0.1 to executed_cycle for each tick
-
-//     swtch(&(c->scheduler), p->context);
-//     switchkvm();
-
-//     // Process is done running for now.
-//     // It should have changed its p->state before coming back.
-//     c->proc = 0;
+//       /* code */
+//     }
 //     release(&ptable.lock);
-
 //   }
-
 // }
+
+void scheduler(void)
+{
+  struct proc *p;
+
+  struct cpu *c = mycpu();
+
+  c->proc = 0;
+
+  for (;;)
+  {
+    sti();
+
+    // Loop over process table looking for process to run.
+    
+
+    while (ticks%30 != 0)
+    {
+      p = roundrobin();
+    }
+    
+
+    // if (!p)
+    // {
+    //   p = sjf();
+    // }
+    // else
+    // {
+
+    //   p = sjf(last_scheduled_RR);
+    //   // if (!p)
+    //   // {
+    //   //   p = bestjobfirst();
+    //   //   if (!p)
+    //   //   {
+    //   //     release(&ptable.lock);
+    //   //     continue;
+    //   //   }
+    //   // }
+    // }
+
+    // Switch to chosen process.  It is the process's job
+    // to release ptable.lock and then reacquire it
+    // before jumping back to us.
+
+    // c->proc = p;
+    // switchuvm(p);
+
+    // p->state = RUNNING;
+    // // add 0.1 to executed_cycle for each tick
+
+    // swtch(&(c->scheduler), p->context);
+    // switchkvm();
+
+    // // Process is done running for now.
+    // // It should have changed its p->state before coming back.
+    // c->proc = 0;
+    // release(&ptable.lock);
+
+  }
+
+}
 
 // Enter scheduler.  Must hold only ptable.lock
 // and have changed proc->state. Saves and restores
