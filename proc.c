@@ -395,18 +395,17 @@ unsigned int rand(void)
   return ticks * 1103515245 + 12345; // A basic LCG formula
 }
 
-struct proc *sjf(struct proc *last_scheduled)
+struct proc *sjf()
 {
   int random = rand();
   int min = 100000000;
-  struct proc *p = last_scheduled;
+  struct proc *p;// = last_scheduled;
   struct proc *min_proc = 0;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
 
     if (p->state == RUNNABLE && p->sched_info.queue == SJF && p->sched_info.sjf.confidence >= random)
     {
-
       min = p->sched_info.sjf.burst_time;
       min_proc = p;
     }
@@ -415,6 +414,20 @@ struct proc *sjf(struct proc *last_scheduled)
   {
     min_proc = p - 1;
   }
+
+  mycpu()->proc = min_proc;
+  switchuvm(min_proc);
+
+  min_proc->state = RUNNING;
+  // add 0.1 to executed_cycle for each tick
+
+  swtch(&(mycpu()->scheduler), min_proc->context);
+  switchkvm();
+
+  // Process is done running for now.
+  // It should have changed its p->state before coming back.
+  mycpu()->proc = 0;
+  release(&ptable.lock);
   return min_proc;
 }
 
@@ -479,10 +492,10 @@ void scheduler(void)
     // Loop over process table looking for process to run.
     
 
-    while (ticks%30 != 0)
-    {
+    //while (ticks%30 != 0)
+    //{
       p = roundrobin();
-    }
+    //}
     
 
     // if (!p)

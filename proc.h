@@ -3,6 +3,10 @@
 #define PROC_H
 #include "spinlock.h" 
 #define SYS_MAX_SIZE 100
+#define RR_PR 3
+#define SJF_PR 2
+#define FCFS_PR 1
+
 struct cpu {
   uchar apicid;                // Local APIC ID
   struct context *scheduler;   // swtch() here to enter scheduler

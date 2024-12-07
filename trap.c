@@ -30,6 +30,46 @@ void idtinit(void)
   lidt(idt, sizeof(idt));
 }
 
+void update_cpu_queue()
+{
+  if (ticks%10==0)
+  {
+    if (mycpu()->rr > 0)
+    {
+      mycpu()->rr--;
+      if (mycpu()->rr == 0)
+      {
+        mycpu()->rr = 0;
+        mycpu()->sjf = SJF_PR;
+        mycpu()->fcfs = 0;
+      }
+      
+    }
+    else if (mycpu()->sjf > 0)
+    {
+      mycpu()->sjf--;
+      if (mycpu()->sjf == 0)
+      {
+        mycpu()->rr = 0;
+        mycpu()->sjf = 0;
+        mycpu()->fcfs = FCFS_PR;
+      }
+    }
+    else if (mycpu()->fcfs > 0)
+    {
+      mycpu()->fcfs--;
+
+      if (mycpu()->fcfs == 0)
+      {
+        mycpu()->rr = RR_PR;
+        mycpu()->sjf = 0;
+        mycpu()->fcfs = 0;
+      }
+    }
+  }
+  
+}
+
 // PAGEBREAK: 41
 void trap(struct trapframe *tf)
 {
@@ -53,6 +93,7 @@ void trap(struct trapframe *tf)
     {
       acquire(&tickslock);
       ticks++;
+      update_cpu_queue();
       wakeup(&ticks);
       release(&tickslock);
     }
