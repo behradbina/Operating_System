@@ -140,7 +140,6 @@ found:
   p->context->eip = (uint)forkret;
 
   p->sched_info.sjf.arrival_time = ticks;
-  p->sched_info.queue = UNSET;
   p->sched_info.sjf.confidence = 50;
   p->sched_info.sjf.burst_time = 2;
   p->sched_info.sjf.process_size = p->sz;
@@ -362,19 +361,19 @@ int wait(void)
 //   - eventually that process transfers control
 //       via swtch back to the scheduler.
 
-
 struct proc *
 roundrobin()
 {
   struct proc *p = ptable.proc;
-     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++){
-       if (p->state != RUNNABLE)
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->state != RUNNABLE)
       continue;
-      else if(p->sched_info.queue==ROUND_ROBIN){
-        return p;
-      }
-     }
-
+    else if (p->sched_info.queue == ROUND_ROBIN)
+    {
+      return p;
+    }
+  }
 }
 // Simple random number generator
 unsigned int rand(void)
@@ -388,24 +387,23 @@ struct proc *sjf(struct proc *last_scheduled)
   int random = rand();
   int min = 100000000;
   struct proc *p = last_scheduled;
-  struct proc* min_proc=0;
+  struct proc *min_proc = 0;
   for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
   {
-   
 
-    if (p->state == RUNNABLE && p->sched_info.queue == SJF && p->sched_info.sjf.confidence>=random){
+    if (p->state == RUNNABLE && p->sched_info.queue == SJF && p->sched_info.sjf.confidence >= random)
+    {
 
-      min=p->sched_info.sjf.burst_time;
-      min_proc=p;
+      min = p->sched_info.sjf.burst_time;
+      min_proc = p;
     }
-
   }
-  if(min_proc==0){
-    min_proc=p-1;
+  if (min_proc == 0)
+  {
+    min_proc = p - 1;
   }
   return min_proc;
 }
-
 
 void scheduler(void)
 {
@@ -427,21 +425,26 @@ void scheduler(void)
     {
       if (p->state != RUNNABLE)
         continue;
-      last_scheduled = p;
+     // cprintf("%d \n",p->sched_info.queue);  
+      if (p->sched_info.queue==ROUND_ROBIN)
+      {
+        last_scheduled = p;
 
-      // Switch to chosen process.  It is the process's job
-      // to release ptable.lock and then reacquire it
-      // before jumping back to us.
-      c->proc = p;
-      switchuvm(p);
-      p->state = RUNNING;
+        // Switch to chosen process.  It is the process's job
+        // to release ptable.lock and then reacquire it
+        // before jumping back to us.
+        c->proc = p;
+        switchuvm(p);
+        p->state = RUNNING;
 
-      swtch(&(c->scheduler), p->context);
-      switchkvm();
+        swtch(&(c->scheduler), p->context);
+        switchkvm();
 
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      c->proc = 0;
+        // Process is done running for now.
+        // It should have changed its p->state before coming back.
+        c->proc = 0;
+      }
+
       /* code */
     }
     release(&ptable.lock);
@@ -451,9 +454,9 @@ void scheduler(void)
 // void scheduler(void)
 // {
 //   struct proc *p;
-  
+
 //   struct cpu *c = mycpu();
-  
+
 //   c->proc = 0;
 
 //   for (;;)
