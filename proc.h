@@ -6,6 +6,7 @@
 #define RR_PR 3
 #define SJF_PR 2
 #define FCFS_PR 1
+#define STARVATION_THRESHOLD 800
 
 struct cpu {
   uchar apicid;                // Local APIC ID
@@ -62,6 +63,7 @@ struct schedinfo {
   struct sjf_info sjf;
   int arrival_queue_time;
   int execution_time;
+  int last_exe_time;
 };
 
 // Per-process state

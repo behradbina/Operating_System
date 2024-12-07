@@ -93,7 +93,7 @@ void trap(struct trapframe *tf)
     {
       acquire(&tickslock);
       ticks++;
-      update_cpu_queue();
+      //update_cpu_queue();
       wakeup(&ticks);
       release(&tickslock);
     }

@@ -63,6 +63,28 @@ myproc(void)
   return p;
 }
 
+struct proc *findproc(int pid)
+{
+  struct proc *p;
+
+  // Acquire the process table lock to ensure thread safety.
+  acquire(&ptable.lock);
+
+  // Iterate over the process table to find the process with the matching pid.
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == pid)
+    {
+      release(&ptable.lock); // Release the lock before returning.
+      return p;
+    }
+  }
+
+  // Release the lock if no process with the given pid is found.
+  release(&ptable.lock);
+  return 0;
+}
+
 int change_Q(int pid, int new_queue);
 struct proc *
 roundrobin();
@@ -253,6 +275,9 @@ int fork(void)
 
   release(&ptable.lock);
 
+  if(pid==2)
+    set_level(pid, ROUND_ROBIN);
+
   return pid;
 }
 
@@ -389,46 +414,80 @@ roundrobin()
   release(&ptable.lock);
 }
 // Simple random number generator
+
+
+
 unsigned int rand(void)
 {
   // extern uint ticks; // Use system timer as a seed
-  return ticks * 1103515245 + 12345; // A basic LCG formula
+  return (ticks * 1103515245 + 12345)%100; // A basic LCG formula
 }
 
-struct proc *sjf()
+struct proc* short_job_first()
 {
-  int random = rand();
-  int min = 100000000;
-  struct proc *p;// = last_scheduled;
-  struct proc *min_proc = 0;
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  struct proc* res=0;
+  struct proc* p;
+  for(p=ptable.proc; p<&ptable.proc[NPROC]; p++)
   {
-
-    if (p->state == RUNNABLE && p->sched_info.queue == SJF && p->sched_info.sjf.confidence >= random)
+    if((p->state != RUNNABLE) || (p->sched_info.queue!=SJF))
+      continue;
+    if(res == 0)
+      res = p;
+    if(p->sched_info.sjf.confidence > rand())
     {
-      min = p->sched_info.sjf.burst_time;
-      min_proc = p;
+      if(p->sched_info.sjf.burst_time < res->sched_info.sjf.burst_time)
+        res = p;
     }
   }
-  if (min_proc == 0)
-  {
-    min_proc = p - 1;
-  }
+  return res;
+}
 
-  mycpu()->proc = min_proc;
-  switchuvm(min_proc);
+int set_level(int pid, int target_level)
+{
+  struct proc *p = findproc(pid);
+  acquire(&ptable.lock);
 
-  min_proc->state = RUNNING;
-  // add 0.1 to executed_cycle for each tick
+  int old_queue = p->sched_info.queue;
+  p->sched_info.queue = target_level;
+  p->sched_info.arrival_queue_time = ticks;
 
-  swtch(&(mycpu()->scheduler), min_proc->context);
-  switchkvm();
-
-  // Process is done running for now.
-  // It should have changed its p->state before coming back.
-  mycpu()->proc = 0;
   release(&ptable.lock);
-  return min_proc;
+  return old_queue;
+}
+
+struct proc* first_come_first_service()
+{
+  struct proc* res=0;
+  struct proc* p;
+  for(p=ptable.proc; p<&ptable.proc[NPROC]; p++)
+  {
+    if((p->state != RUNNABLE) || (p->sched_info.queue!=FCFS))
+      continue;
+    if(res == 0)
+      res = p;
+    else if(p->sched_info.arrival_queue_time < res->sched_info.arrival_queue_time)
+      res = p;
+  }
+  return res;
+}
+
+
+struct proc *
+round_robin_t(struct proc *last_scheduled)
+{
+  struct proc *p = last_scheduled;
+  for (;;)
+  {
+    p++;
+    if (p >= &ptable.proc[NPROC])
+      p = ptable.proc;
+    if (p->state == RUNNABLE && p->sched_info.queue == ROUND_ROBIN)
+      return p;
+
+    if (p == last_scheduled)
+      return 0;
+  }
+  return 0;
 }
 
 // void scheduler(void)
@@ -480,9 +539,9 @@ struct proc *sjf()
 void scheduler(void)
 {
   struct proc *p;
-
+  
   struct cpu *c = mycpu();
-
+  struct proc *last_scheduled_RR = &ptable.proc[NPROC - 1];
   c->proc = 0;
 
   for (;;)
@@ -490,53 +549,46 @@ void scheduler(void)
     sti();
 
     // Loop over process table looking for process to run.
+    acquire(&ptable.lock);
+    if(mycpu()->rr>0)
+      p = round_robin_t(last_scheduled_RR);
     
+    if (p)
+      last_scheduled_RR = p;
+    else
+    {
+      p = short_job_first();
 
-    //while (ticks%30 != 0)
-    //{
-      p = roundrobin();
-    //}
-    
-
-    // if (!p)
-    // {
-    //   p = sjf();
-    // }
-    // else
-    // {
-
-    //   p = sjf(last_scheduled_RR);
-    //   // if (!p)
-    //   // {
-    //   //   p = bestjobfirst();
-    //   //   if (!p)
-    //   //   {
-    //   //     release(&ptable.lock);
-    //   //     continue;
-    //   //   }
-    //   // }
-    // }
+      
+      if (!p)
+      {
+        p = first_come_first_service();
+        if (!p)
+        {
+          release(&ptable.lock);
+          continue;
+        }
+      }
+    }
 
     // Switch to chosen process.  It is the process's job
     // to release ptable.lock and then reacquire it
     // before jumping back to us.
 
-    // c->proc = p;
-    // switchuvm(p);
+    c->proc = p;
+    switchuvm(p);
 
-    // p->state = RUNNING;
-    // // add 0.1 to executed_cycle for each tick
+    p->state = RUNNING;
 
-    // swtch(&(c->scheduler), p->context);
-    // switchkvm();
+    //p->sched_info.last_exe_time = ticks;
 
-    // // Process is done running for now.
-    // // It should have changed its p->state before coming back.
-    // c->proc = 0;
-    // release(&ptable.lock);
+
+    swtch(&(c->scheduler), p->context);
+    switchkvm();
+    c->proc = 0;
+    release(&ptable.lock);
 
   }
-
 }
 
 // Enter scheduler.  Must hold only ptable.lock
