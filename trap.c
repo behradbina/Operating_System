@@ -115,13 +115,16 @@ void trap(struct trapframe *tf)
       {
         if (ticks%5 == 0)
         {
-          cprintf("pid:%d ticks:%d\n",  myproc()->pid,ticks);
+          cprintf("cpu %d pid %d ticks %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks);
           yield();
         }
       }
 
       if (myproc()->sched_info.queue == SJF)
       {
+        yield();
+      }
+      else{
         yield();
       }
   }

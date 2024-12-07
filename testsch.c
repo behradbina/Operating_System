@@ -15,7 +15,7 @@ void do_work(int duration) {
 
 int main(int argc, char *argv[]) {
     int pid;
-    int num_processes = 5; 
+    int num_processes = 4; 
     int durations[] = {20, 40, 60, 80, 100};
     if (argc < 3) {
         printf(1, "Usage: testsechduler <burst time> <confidence>\n");

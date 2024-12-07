@@ -468,9 +468,9 @@ void scheduler(void)
 
 //     p = roundrobin();
 
-//     // if (p)
+//     // if (!p)
 //     // {
-//     //   last_scheduled_RR = p;
+//     //   p = sjf();
 //     // }
 //     // else
 //     // {
