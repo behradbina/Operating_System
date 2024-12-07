@@ -54,6 +54,7 @@ struct schedinfo {
   int last_run;
   struct sjf_info sjf;
   int arrival_queue_time;
+  int execution_time;
 };
 
 // Per-process state
