@@ -90,6 +90,7 @@ struct proc {
   struct schedinfo sched_info;
   int age;
   int ticks;
+  int consequtive_run;
 };
  
 // Process memory is laid out contiguously, low addresses first:

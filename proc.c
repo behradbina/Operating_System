@@ -91,24 +91,6 @@ roundrobin();
 struct proc *
 fcfs(void);
 
-// struct proc *
-// roundrobin(struct proc *last_scheduled)
-// {
-//   struct proc *p = last_scheduled;
-//   for (;;)
-//   {
-//     p++;
-//     if (p >= &ptable.proc[NPROC])
-//       p = ptable.proc;
-
-//     if (p->state == RUNNABLE && p->sched_info.queue == ROUND_ROBIN)
-//       return p;
-
-//     if (p == last_scheduled)
-//       return 0;
-//   }
-// }
-
 // PAGEBREAK: 32
 //  Look in the process table for an UNUSED proc.
 //  If found, change state to EMBRYO and initialize
@@ -174,6 +156,8 @@ found:
   p->sched_info.sjf.burst_time = 2;
   p->sched_info.sjf.process_size = p->sz;
   p->start_time = ticks;
+  p->consequtive_run = 0;
+
   if (p->pid != 0 && p->pid != 1 && p->pid != 2 )
   {
     // cprintf("pid : %d on cpu : %d \n" , p->pid, (int)mycpu()->apicid);
@@ -400,37 +384,6 @@ int wait(void)
 //   - eventually that process transfers control
 //       via swtch back to the scheduler.
 
-struct proc *
-roundrobin()
-{
-  acquire(&ptable.lock);
-  struct proc *p = ptable.proc;
-  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-  {
-    if (p->state != RUNNABLE)
-      continue;
-    if (p->sched_info.queue == ROUND_ROBIN)
-    {
-      mycpu()->proc = p;
-      switchuvm(p);
-
-      p->state = RUNNING;
-      // add 0.1 to executed_cycle for each tick
-
-      swtch(&(mycpu()->scheduler), p->context);
-      switchkvm();
-
-      // Process is done running for now.
-      // It should have changed its p->state before coming back.
-      mycpu()->proc = 0;
-    }
-  }
-  release(&ptable.lock);
-}
-// Simple random number generator
-
-
-
 unsigned int rand(void)
 {
   // extern uint ticks; // Use system timer as a seed
@@ -506,52 +459,6 @@ round_robin_t(struct proc *last_scheduled)
   }
   return 0;
 }
-
-// void scheduler(void)
-// {
-//   struct proc *p;
-//   struct cpu *c = mycpu();
-//   c->proc = 0;
-//   int min = -1;
-//   struct proc *p_sjf;
-//   for (;;)
-//   {
-//     // Enable interrupts on this processor.
-//     sti();
-
-//     // Loop over process table looking for process to run.
-//     acquire(&ptable.lock);
-//     struct proc *last_scheduled = 0;
-
-//     for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
-//     {
-//       if (p->state != RUNNABLE)
-//         continue;
-//      // cprintf("%d \n",p->sched_info.queue);  
-//       if (p->sched_info.queue==ROUND_ROBIN)
-//       {
-//         last_scheduled = p;
-
-//         // Switch to chosen process.  It is the process's job
-//         // to release ptable.lock and then reacquire it
-//         // before jumping back to us.
-//         c->proc = p;
-//         switchuvm(p);
-//         p->state = RUNNING;
-
-//         swtch(&(c->scheduler), p->context);
-//         switchkvm();
-
-//         // Process is done running for now.
-//         // It should have changed its p->state before coming back.
-//         c->proc = 0;
-//       }
-
-//       /* code */
-//     }
-//     release(&ptable.lock);
-//   }
-// }
 
 void scheduler(void)
 {
@@ -646,11 +553,14 @@ void scheduler(void)
 
     p->state = RUNNING;
 
-    //p->sched_info.last_exe_time = ticks;
 
 
     swtch(&(c->scheduler), p->context);
     switchkvm();
+
+    p->consequtive_run += ticks - p->sched_info.last_exe_time;
+    p->sched_info.last_exe_time = ticks;
+
     c->proc = 0;
     release(&ptable.lock);
 
@@ -867,6 +777,7 @@ int sort_uniqe_procces(int pid)
   }
   return -1;
 }
+
 int get_max_invoked(int pid)
 {
   struct proc *p;
@@ -1028,7 +939,7 @@ void show_process_info()
       [ZOMBIE] "zombie"};
 
   static int columns[] = {16, 8, 9, 8, 8, 8, 9, 8};
-  cprintf("Process_Name    PID     State    wait time   Confidence  burst time consequtive run  arrival\n"
+  cprintf("Process_Name    PID     State  Queue  wait time   Confidence  burst time consequtive run  arrival\n"
           "------------------------------------------------------------------------------------------------------\n");
 
   struct proc *p;
@@ -1043,25 +954,41 @@ void show_process_info()
     else
       state = "unknown state";
 
+    //name
     cprintf("%s", p->name);
     space(columns[0] - strlen(p->name));
-
+    //pid
     cprintf("%d", p->pid);
     space(columns[1] - num_digits(p->pid));
-
+    //state
     cprintf("%s", state);
     space(columns[2] - strlen(state));
+    //queue
+    cprintf("%d", p->sched_info.queue);
+    space(columns[2] - strlen(state));
 
-    cprintf("%d", p->sched_info.sjf.confidence);
+    //wait time
+    if (p->state != RUNNABLE)
+    {
+      cprintf("%d", 0);
+    }
+
+    else
+    {
+      cprintf("%d", ticks - p->sched_info.last_exe_time);
+    }
+    
     space(columns[3] - num_digits(p->sched_info.sjf.confidence));
 
+    //connfidence
+    cprintf("%d", p->sched_info.sjf.confidence);
+    space(columns[3] - num_digits(p->sched_info.sjf.confidence));
+    //burst time
     cprintf("%d", p->sched_info.sjf.burst_time);
     space(columns[4] - num_digits(p->sched_info.sjf.burst_time));
 
-    // cprintf("%d", p->sched_info.sjf.priority);
-    // space(columns[6] - num_digits(p->sched_info.sjf.priority));
-
-    // wait time algorithm???
+    cprintf("%d", p->consequtive_run);
+    space(columns[6] - num_digits(p->sched_info.sjf.priority));
 
     cprintf("%d", p->sched_info.sjf.arrival_time);
     space(columns[7] - num_digits(p->sched_info.sjf.arrival_time));

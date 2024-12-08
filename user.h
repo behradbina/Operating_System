@@ -42,6 +42,6 @@ int move_file(const char *src_file, const char *dest_dir);
 int sort_syscalls(int pid); 
 int get_most_invoked_syscalls(int pid);
 int list_all_processes(void);
-int change_schedular_queue(void);
+int change_schedular_queue(int pid, int new_queue);
 int show_process_info(void);
 int set_proc_sjf_params(int pid , int burst_time, int confidence);
