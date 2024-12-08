@@ -47,7 +47,7 @@ struct context {
   uint eip;
 };
 
-enum schedqueue {UNSET, ROUND_ROBIN, FCFS, SJF};
+enum schedqueue {UNSET, ROUND_ROBIN, SJF,FCFS};
 
 enum procstate { UNUSED, EMBRYO, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 

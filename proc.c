@@ -477,14 +477,14 @@ struct proc* first_come_first_service()
   {
     if((p->state != RUNNABLE) || (p->sched_info.queue!=FCFS))
       continue;
-       cprintf("pid: %d arrival:  %d cpu: %d\n",p->pid,p->sched_info.sjf.arrival_time,(int)mycpu()->apicid);
+      // cprintf("pid: %d arrival:  %d cpu: %d\n",p->pid,p->sched_info.sjf.arrival_time,(int)mycpu()->apicid);
     if(res == 0)
       res = p;
     else if(p->sched_info.sjf.arrival_time < res->sched_info.sjf.arrival_time)
       res = p;
   }
   if(res)
-  cprintf("chosen one is %d\n",res->pid);
+ // cprintf("chosen one is %d\n",res->pid);
   return res;
 }
 
@@ -567,6 +567,7 @@ void scheduler(void)
     // Loop over process table looking for process to run.
     p = 0;
     acquire(&ptable.lock);
+    //cprintf("time: %d",mycpu()->timePassed);
     if (mycpu()->qTypeTurn == ROUND_ROBIN)
     {
       if(mycpu()->rr>0)
@@ -585,7 +586,8 @@ void scheduler(void)
 
       }
     }
-    // cprintf("time passed  : %d QType : %d\n", mycpu()->timePassed, mycpu()->qTypeTurn);
+    //cprintf("time passed  : %d QType : %d\n", mycpu()->timePassed, mycpu()->qTypeTurn);
+      //cprintf("time: %d",mycpu()->timePassed);
 
     if (p)
       last_scheduled_RR = p;
@@ -593,6 +595,7 @@ void scheduler(void)
     {
       mycpu()->qTypeTurn = SJF;
       mycpu()->timePassed = 0;
+    
       if (mycpu()->qTypeTurn == SJF)
       {
         p = short_job_first();
@@ -603,7 +606,7 @@ void scheduler(void)
           mycpu()->timePassed = 0;
         }
       }
-      
+      //cprintf("time passed  : %d QType : %d\n", mycpu()->timePassed, mycpu()->qTypeTurn);
       if (!p)
       {
         mycpu()->qTypeTurn = FCFS;

@@ -161,16 +161,18 @@ void trap(struct trapframe *tf)
       {
         if (ticks%5 == 0)
         {
-          cprintf("cpu %d pid %d ticks %d rr %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks, mycpu()->rr);
+          cprintf("cpu %d pid %d ticks %d q %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks,myproc()->sched_info.queue);
           yield();
         }
       }
 
       if (myproc()->sched_info.queue == SJF)
       {
+         cprintf("cpu %d pid %d ticks %d q %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks,myproc()->sched_info.queue);
         yield();
       }
       else{
+        cprintf("cpu %d pid %d ticks %d q %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks,myproc()->sched_info.queue);
         yield();
       }
   }
