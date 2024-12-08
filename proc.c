@@ -135,7 +135,14 @@ found:
   p->pid = nextpid++;
   p->numsystemcalls = 0;
   p->sched_info.execution_time = 0;
-  p->sched_info.queue = ROUND_ROBIN;
+  if (p->pid == 2 || p->pid == 1)
+  {
+    p->sched_info.queue = ROUND_ROBIN;
+  }
+  else 
+  {
+    p->sched_info.queue = FCFS;
+  }
 
   release(&ptable.lock);
 

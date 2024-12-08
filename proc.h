@@ -86,6 +86,8 @@ struct proc {
   int numsystemcalls;
 
   struct schedinfo sched_info;
+  int age;
+  int ticks;
 };
  
 // Process memory is laid out contiguously, low addresses first:
