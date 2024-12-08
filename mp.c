@@ -111,7 +111,7 @@ mpinit(void)
         cpus[ncpu].rr = RR_PR;
         cpus[ncpu].sjf = 0;
         cpus[ncpu].fcfs = 0;
-        cpus[ncpu].timePassed = 0;
+        cpus[ncpu].timePassed = 1;
         cpus[ncpu].qTypeTurn = ROUND_ROBIN;
         ncpu++;
       }
