@@ -581,7 +581,17 @@ void scheduler(void)
       last_scheduled_RR = p;
     else
     {
-      p = short_job_first();
+      if (mycpu()->qTypeTurn == SJF)
+      {
+        p = short_job_first();
+        mycpu()->timePassed++;
+        if (mycpu()->timePassed == 20)
+        {
+          mycpu()->qTypeTurn = FCFS;
+        }
+      }
+      
+     
 
       
       if (!p)
