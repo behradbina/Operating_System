@@ -557,69 +557,70 @@ void scheduler(void)
   struct cpu *c = mycpu();
   struct proc *last_scheduled_RR = &ptable.proc[NPROC - 1];
   c->proc = 0;
-  int x;
+
   for (;;)
   {
     sti();
     // Loop over process table looking for process to run.
+    p = 0;
     acquire(&ptable.lock);
     if (mycpu()->qTypeTurn == ROUND_ROBIN)
-      x = 0;
-    // {
+    {
       if(mycpu()->rr>0)
-      p = round_robin_t(last_scheduled_RR);
-      // mycpu()->timePassed++;
+        p = round_robin_t(last_scheduled_RR);
+
+      mycpu()->timePassed++;
       if (p)
       {
         // cprintf("time passed  : %d", mycpu()->timePassed);
       }
-      
-      // if (mycpu()->timePassed == 30)
-      // {
-      //   mycpu()->qTypeTurn = SJF;
-      //   mycpu()->timePassed = 0;
+      // mycpu()->qTypeTurn = SJF;
+      if (mycpu()->timePassed == 30)
+      {
+        mycpu()->qTypeTurn = SJF;
+        mycpu()->timePassed = 0;
 
-      // }
-    // }
+      }
+    }
     // cprintf("time passed  : %d QType : %d\n", mycpu()->timePassed, mycpu()->qTypeTurn);
 
     if (p)
       last_scheduled_RR = p;
     else
     {
-      // mycpu()->qTypeTurn = SJF;
-      // mycpu()->timePassed = 0;
-      // if (mycpu()->qTypeTurn == SJF)
-      // {
+      mycpu()->qTypeTurn = SJF;
+      mycpu()->timePassed = 0;
+      if (mycpu()->qTypeTurn == SJF)
+      {
         p = short_job_first();
-        // mycpu()->timePassed++;
-        // if (mycpu()->timePassed == 20)
-        // {
-        //   mycpu()->qTypeTurn = FCFS;
-        //   mycpu()->timePassed = 0;
-        // }
-      // }
+        mycpu()->timePassed++;
+        if (mycpu()->timePassed == 20)
+        {
+          mycpu()->qTypeTurn = FCFS;
+          mycpu()->timePassed = 0;
+        }
+      }
       
       if (!p)
       {
-        // mycpu()->qTypeTurn = FCFS;
-        // mycpu()->timePassed = 0;
-        // if (mycpu()->qTypeTurn == FCFS)
-        // {
+        mycpu()->qTypeTurn = FCFS;
+        mycpu()->timePassed = 0;
+        if (mycpu()->qTypeTurn == FCFS)
+        {
           p = first_come_first_service();
-          // mycpu()->timePassed++;
-          // if (mycpu()->timePassed == 10)
-          // {
-          //   mycpu()->qTypeTurn = ROUND_ROBIN;
-          //   mycpu()->timePassed = 0;
+          mycpu()->timePassed++;
+          if (mycpu()->timePassed == 10)
+          {
+            mycpu()->qTypeTurn = ROUND_ROBIN;
+            mycpu()->timePassed = 0;
 
-          // }
-        // }
+          }
+        }
         
         if (!p)
         {
-          // mycpu()->qTypeTurn = ROUND_ROBIN;
-          // mycpu()->timePassed = 0;
+          mycpu()->qTypeTurn = ROUND_ROBIN;
+          mycpu()->timePassed = 0;
           // cprintf("11\n");
           release(&ptable.lock);
 
