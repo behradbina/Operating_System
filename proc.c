@@ -557,13 +557,14 @@ void scheduler(void)
   struct cpu *c = mycpu();
   struct proc *last_scheduled_RR = &ptable.proc[NPROC - 1];
   c->proc = 0;
-
+  int x;
   for (;;)
   {
     sti();
     // Loop over process table looking for process to run.
     acquire(&ptable.lock);
-    // if (mycpu()->qTypeTurn == ROUND_ROBIN)
+    if (mycpu()->qTypeTurn == ROUND_ROBIN)
+      x = 0;
     // {
       if(mycpu()->rr>0)
       p = round_robin_t(last_scheduled_RR);
