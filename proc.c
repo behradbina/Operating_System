@@ -477,11 +477,14 @@ struct proc* first_come_first_service()
   {
     if((p->state != RUNNABLE) || (p->sched_info.queue!=FCFS))
       continue;
+       cprintf("pid: %d arrival:  %d cpu: %d\n",p->pid,p->sched_info.sjf.arrival_time,(int)mycpu()->apicid);
     if(res == 0)
       res = p;
-    else if(p->sched_info.arrival_queue_time < res->sched_info.arrival_queue_time)
+    else if(p->sched_info.sjf.arrival_time < res->sched_info.sjf.arrival_time)
       res = p;
   }
+  if(res)
+  cprintf("chosen one is %d\n",res->pid);
   return res;
 }
 
