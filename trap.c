@@ -8,6 +8,7 @@
 #include "traps.h"
 #include "spinlock.h"
 
+
 // Interrupt descriptor table (shared by all CPUs).
 struct gatedesc idt[256];
 extern uint vectors[]; // in vectors.S: array of 256 entry pointers
@@ -70,6 +71,9 @@ void update_cpu_queue()
   
 }
 
+
+
+
 // PAGEBREAK: 41
 void trap(struct trapframe *tf)
 {
@@ -94,6 +98,7 @@ void trap(struct trapframe *tf)
       acquire(&tickslock);
       ticks++;
       //update_cpu_queue();
+      ageProcs();
       wakeup(&ticks);
       release(&tickslock);
     }

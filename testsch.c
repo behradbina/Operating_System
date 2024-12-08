@@ -6,7 +6,7 @@
 void do_work(int duration) {
   //  cprintf("****************");
     int start = uptime();
-    //cprintf("%d",start);
+    printf(1,"%d",start);
     while (uptime() - start < duration) {
         // Busy loop to simulate work
     }
@@ -16,7 +16,7 @@ void do_work(int duration) {
 int main(int argc, char *argv[]) {
     int pid;
     int num_processes = 4; 
-    int durations[] = {20, 40, 60, 80, 100};
+    int durations[] = {2000, 400, 600, 800, 1000};
     if (argc < 3) {
         printf(1, "Usage: testsechduler <burst time> <confidence>\n");
         exit();

@@ -143,7 +143,8 @@ found:
   {
     p->sched_info.queue = FCFS;
   }
-
+  p->age = 0;
+  p->ticks = 0;
   release(&ptable.lock);
 
   // Allocate kernel stack.
@@ -173,6 +174,11 @@ found:
   p->sched_info.sjf.burst_time = 2;
   p->sched_info.sjf.process_size = p->sz;
   p->start_time = ticks;
+  if (p->pid != 0 && p->pid != 1 && p->pid != 2 )
+  {
+    // cprintf("pid : %d on cpu : %d \n" , p->pid, (int)mycpu()->apicid);
+  }
+  
 
   return p;
 }
@@ -279,10 +285,11 @@ int fork(void)
   acquire(&ptable.lock);
 
   np->state = RUNNABLE;
+  cprintf("pid : %d on cpu : %d \n" , np->pid, (int)mycpu()->apicid);
 
   release(&ptable.lock);
 
-  if(pid==2)
+  if(pid==2 || pid == 1)
     set_level(pid, ROUND_ROBIN);
 
   return pid;
@@ -1029,4 +1036,45 @@ int set_proc_sjf_params_(int pid, int burst_time, int confidence)
   }
   release(&ptable.lock);
   return -1;
+}
+
+void ageProcs()
+{
+  struct proc *p;
+  acquire(&ptable.lock);
+  for (p = ptable.proc; p < &ptable.proc[NPROC]; p++)
+  {
+    if (p->pid == 0 || p->pid == 1 || p->pid == 2)
+    {
+      continue;
+    }
+    if (p->state == RUNNING)
+    {
+      p->ticks++;
+    }
+    
+    if (p->state != RUNNABLE)
+    {
+      continue;
+    }
+    
+    p->age++;
+    if (p->age == 800)
+    {
+      if (p->sched_info.queue == FCFS)
+      {
+        p->sched_info.queue = SJF;
+        cprintf("pid %d aged by one and age = %d and go to SJF Queue with %d cpu : %d doneTicks : %d \n" , p->pid, p->age, p->sched_info.queue, (int)mycpu()->apicid, p->ticks);
+        p->age = 0;
+      }
+      else if (p->sched_info.queue == SJF )
+      {
+        p->sched_info.queue = ROUND_ROBIN;
+        cprintf("pid %d aged by one and age = %d and go to RR Queue with %d cpu : %d doneTicks : %d \n" , p->pid, p->age, p->sched_info.queue, (int)mycpu()->apicid, p->ticks);
+        p->age = 0;
+      }
+    }
+  }
+  release(&ptable.lock);
+  
 }
