@@ -591,12 +591,18 @@ void scheduler(void)
         }
       }
       
-     
-
-      
       if (!p)
       {
-        p = first_come_first_service();
+        if (mycpu()->qTypeTurn == FCFS)
+        {
+          p = first_come_first_service();
+          mycpu()->timePassed++;
+          if (mycpu()->timePassed == 10)
+          {
+            mycpu()->qTypeTurn = ROUND_ROBIN;
+          }
+        }
+        
         if (!p)
         {
           release(&ptable.lock);
