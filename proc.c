@@ -954,7 +954,7 @@ void show_process_info()
       [RUNNING] "running",
       [ZOMBIE] "zombie"};
 
-  static int columns[] = {16, 8, 9, 8, 8, 8, 9, 8};
+  static int columns[] = {16, 8, 9, 8, 8, 8, 9, 8, 8, 8};
   cprintf("Process_Name    PID     State  Queue  wait time   Confidence  burst time consequtive run  arrival\n"
           "------------------------------------------------------------------------------------------------------\n");
 
@@ -980,8 +980,8 @@ void show_process_info()
     cprintf("%s", state);
     space(columns[2] - strlen(state));
     //queue
-    cprintf("%d", p->sched_info.queue);
-    space(columns[2] - strlen(state));
+    cprintf("%d ", p->sched_info.queue);
+    space(columns[3] - num_digits(p->sched_info.queue));
 
     //wait time
     if (p->state != RUNNABLE)
@@ -994,20 +994,20 @@ void show_process_info()
       cprintf("%d", ticks - p->sched_info.last_exe_time);
     }
     
-    space(columns[3] - num_digits(p->sched_info.sjf.confidence));
+    space(columns[4] - num_digits(p->sched_info.sjf.confidence));
 
     //connfidence
     cprintf("%d", p->sched_info.sjf.confidence);
-    space(columns[3] - num_digits(p->sched_info.sjf.confidence));
+    space(columns[5] - num_digits(p->sched_info.sjf.confidence));
     //burst time
     cprintf("%d", p->sched_info.sjf.burst_time);
-    space(columns[4] - num_digits(p->sched_info.sjf.burst_time));
+    space(columns[6] - num_digits(p->sched_info.sjf.burst_time));
 
     cprintf("%d", p->consequtive_run);
-    space(columns[6] - num_digits(p->sched_info.sjf.priority));
+    space(columns[7] - num_digits(p->consequtive_run));
 
     cprintf("%d", p->sched_info.sjf.arrival_time);
-    space(columns[7] - num_digits(p->sched_info.sjf.arrival_time));
+    space(columns[8] - num_digits(p->sched_info.sjf.arrival_time));
 
     cprintf("\n");
   }

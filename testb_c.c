@@ -29,10 +29,10 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < num_processes; i++) {
 
         pid = fork();
-       set_proc_sjf_params(pid,bursttime,confidence);
+        set_proc_sjf_params(pid,bursttime,confidence);
          
         if (pid == 0) {
-            printf(1, "Process %d starting, duration: %d ticks\n", getpid(), durations[i]);
+            //printf(1, "Process %d starting, duration: %d ticks\n", getpid(), durations[i]);
             do_work(durations[i]);
             printf(1, "Process %d finished\n", getpid());
             exit();
@@ -41,7 +41,8 @@ int main(int argc, char *argv[]) {
             exit();
         }
     }
-
+    
+    show_process_info();
     
     for (int i = 0; i < num_processes; i++) {
         wait();
