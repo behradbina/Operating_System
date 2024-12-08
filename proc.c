@@ -563,15 +563,20 @@ void scheduler(void)
     sti();
 
     // Loop over process table looking for process to run.
-    if (mycpu()->qTypeTurn == ROUND_ROBIN)
-    {
-      
-    }
+    
     
     acquire(&ptable.lock);
-    if(mycpu()->rr>0)
+    if (mycpu()->qTypeTurn == ROUND_ROBIN)
+    {
+      if(mycpu()->rr>0)
       p = round_robin_t(last_scheduled_RR);
-    
+      mycpu()->timePassed++;
+      if (mycpu()->timePassed == 30)
+      {
+        mycpu()->qTypeTurn = SJF;
+      }
+    }
+
     if (p)
       last_scheduled_RR = p;
     else
