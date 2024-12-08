@@ -478,71 +478,87 @@ void scheduler(void)
     if (mycpu()->qTypeTurn == ROUND_ROBIN)
     {
       if(mycpu()->rr>0)
-        p = round_robin_t(last_scheduled_RR);
-
-      mycpu()->timePassed++;
-      if (p)
       {
-        // cprintf("time passed  : %d", mycpu()->timePassed);
+        p = round_robin_t(last_scheduled_RR);
       }
-      // mycpu()->qTypeTurn = SJF;
-      if (mycpu()->timePassed == 30)
+      if (!p)
       {
         mycpu()->qTypeTurn = SJF;
-        mycpu()->timePassed = 0;
-
-      }
-    }
-    //cprintf("time passed  : %d QType : %d\n", mycpu()->timePassed, mycpu()->qTypeTurn);
-      //cprintf("time: %d",mycpu()->timePassed);
-
-    if (p)
-      last_scheduled_RR = p;
-    else
-    {
-      mycpu()->qTypeTurn = SJF;
-      mycpu()->timePassed = 0;
-    
-      if (mycpu()->qTypeTurn == SJF)
-      {
+        mycpu()->timePassed =  1;
         p = short_job_first();
-        mycpu()->timePassed++;
-        if (mycpu()->timePassed == 20)
-        {
-          mycpu()->qTypeTurn = FCFS;
-          mycpu()->timePassed = 0;
-        }
       }
-      //cprintf("time passed  : %d QType : %d\n", mycpu()->timePassed, mycpu()->qTypeTurn);
       if (!p)
       {
         mycpu()->qTypeTurn = FCFS;
-        mycpu()->timePassed = 0;
-        if (mycpu()->qTypeTurn == FCFS)
+        mycpu()->timePassed = 1;
+        p = first_come_first_service();
+      }
+      if (!p)
+      {
+        mycpu()->qTypeTurn = ROUND_ROBIN;
+        mycpu()->timePassed = 1;
+      }
+      
+      
+    }
+    else if (mycpu()->qTypeTurn == SJF)
+    {
+      p = short_job_first();
+      if (!p)
+      {
+        mycpu()->qTypeTurn = FCFS;
+        mycpu()->timePassed = 1;
+        p = first_come_first_service();
+      }
+      if (!p)
+      {
+        mycpu()->qTypeTurn = ROUND_ROBIN;
+        mycpu()->timePassed = 1;
+        if(mycpu()->rr>0)
         {
-          p = first_come_first_service();
-          mycpu()->timePassed++;
-          if (mycpu()->timePassed == 10)
-          {
-            mycpu()->qTypeTurn = ROUND_ROBIN;
-            mycpu()->timePassed = 0;
-
-          }
+          p = round_robin_t(last_scheduled_RR);
         }
+      }
+      if (!p)
+      {
+        mycpu()->qTypeTurn = SJF;
+        mycpu()->timePassed =  1;
+      }
+      
+    }
+    else
+    {
+      p = first_come_first_service();
+      if (!p)
+      {
+        mycpu()->qTypeTurn = ROUND_ROBIN;
+        mycpu()->timePassed = 1;
+        if(mycpu()->rr>0)
+        {
+          p = round_robin_t(last_scheduled_RR);
+        }
+      }
+      if (!p)
+      {
+        mycpu()->qTypeTurn = SJF;
+        mycpu()->timePassed =  1;
+        p = short_job_first();
+      }
+      if (!p)
+      {
+        mycpu()->qTypeTurn = SJF;
+        mycpu()->timePassed =  1;
+      }
+    }
         
         if (!p)
         {
           mycpu()->qTypeTurn = ROUND_ROBIN;
           mycpu()->timePassed = 0;
-          // cprintf("11\n");
           release(&ptable.lock);
 
           continue;
         }
-        // release(&ptable.lock);
-
-      }
-    }
 
     // Switch to chosen process.  It is the process's job
     // to release ptable.lock and then reacquire it

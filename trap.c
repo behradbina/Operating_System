@@ -98,9 +98,15 @@ void trap(struct trapframe *tf)
       acquire(&tickslock);
       ticks++;
       //update_cpu_queue();
+      mycpu()->timePassed++;
       ageProcs();
       wakeup(&ticks);
       release(&tickslock);
+    }
+    else
+    {
+      mycpu()->timePassed++;
+      ageProcs();
     }
     lapiceoi();
     break;
@@ -156,25 +162,40 @@ void trap(struct trapframe *tf)
       tf->trapno == T_IRQ0 + IRQ_TIMER){
 
       myproc()->sched_info.execution_time ++ ;
-
-      if (myproc()->sched_info.queue == ROUND_ROBIN)
+      if (mycpu()->qTypeTurn == ROUND_ROBIN && mycpu()->timePassed == 30)
       {
-        if (ticks%5 == 0)
+        // cprintf("RR time is finished we should go to SJF timePassed : %d\n", mycpu()->timePassed );
+        mycpu()->qTypeTurn = SJF;
+        mycpu()->timePassed = 1;
+        yield();
+      }
+      else if (mycpu()->qTypeTurn == SJF && mycpu()->timePassed == 20)
+      {
+        // cprintf("SJF time is finished we should go to FCFS timePassed : %d\n", mycpu()->timePassed );
+        mycpu()->qTypeTurn = FCFS;
+        mycpu()->timePassed = 1;
+        yield();
+      }
+      else if (mycpu()->qTypeTurn == FCFS && mycpu()->timePassed == 10)
+      {
+        // cprintf("FCFS time is finished we should go to RR timePassed : %d\n", mycpu()->timePassed );
+        mycpu()->qTypeTurn = ROUND_ROBIN;
+        mycpu()->timePassed = 1;
+        yield();
+      }
+      else
+      {
+        if (myproc()->sched_info.queue == ROUND_ROBIN)
         {
-          //cprintf("cpu %d pid %d ticks %d q %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks,myproc()->sched_info.queue);
-          yield();
+          if (ticks%5 == 0)
+          {
+            yield();
+          }
         }
       }
-
-      if (myproc()->sched_info.queue == SJF)
-      {
-         //cprintf("cpu %d pid %d ticks %d q %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks,myproc()->sched_info.queue);
-        yield();
-      }
-      else{
-        //cprintf("cpu %d pid %d ticks %d q %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks,myproc()->sched_info.queue);
-        yield();
-      }
+      // cprintf("cpu %d pid %d ticks %d q %d\n", (int)mycpu()->apicid ,myproc()->pid, ticks,myproc()->sched_info.queue);
+      
+  
   }
 
       
