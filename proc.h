@@ -20,6 +20,8 @@ struct cpu {
   int rr;
   int sjf;
   int fcfs;
+  int timePassed;
+  int qTypeTurn;
 };
 
 
