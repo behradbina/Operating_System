@@ -22,6 +22,7 @@ struct cpu {
   int fcfs;
   int timePassed;
   int qTypeTurn;
+  int weighted_syscall;
 };
 
 
