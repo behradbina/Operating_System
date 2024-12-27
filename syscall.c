@@ -151,10 +151,19 @@ syscall(void)
 {
   int num;
   struct proc *curproc = myproc();
-
+ struct cpu *c = mycpu();
   num = curproc->tf->eax;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     curproc->tf->eax = syscalls[num]();
+
+    
+         if (num == SYS_open) {
+            c->weighted_syscall += 3;  // Coefficient for open
+        } else if (num == SYS_write) {
+            c->weighted_syscall += 2;  // Coefficient for write
+        } else {
+            c->weighted_syscall += 1;  // Coefficient for all other calls
+        }
   } else {
     cprintf("%d\n" , num);
     cprintf("%d %s: unknown sys call %d\n",
