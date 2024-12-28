@@ -8,6 +8,9 @@
 #define FCFS_PR 1
 #define STARVATION_THRESHOLD 800
 
+extern int global_syscall_count;
+extern int available;
+
 struct cpu {
   uchar apicid;                // Local APIC ID
   struct context *scheduler;   // swtch() here to enter scheduler
@@ -103,5 +106,7 @@ struct proc {
     struct spinlock lock;
     struct proc proc[NPROC];
 };
+
+
 
 #endif

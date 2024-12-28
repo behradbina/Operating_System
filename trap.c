@@ -9,6 +9,14 @@
 #include "spinlock.h"
 
 
+struct {
+    struct spinlock lock;
+    int global_counter;
+}  syscall_struct ;
+void init_syscall_struct(){
+  initlock(&syscall_struct.lock,"sycall_struct");
+  syscall_struct.global_counter=0;
+}
 // Interrupt descriptor table (shared by all CPUs).
 struct gatedesc idt[256];
 extern uint vectors[]; // in vectors.S: array of 256 entry pointers
@@ -85,6 +93,7 @@ void trap(struct trapframe *tf)
       myproc()->systemcalls[myproc()->numsystemcalls++] = tf->eax;
     myproc()->tf = tf;
     syscall();
+
     if (myproc()->killed)
       exit();
     return;
@@ -98,7 +107,34 @@ void trap(struct trapframe *tf)
       acquire(&tickslock);
       ticks++;
       //update_cpu_queue();
+
       mycpu()->timePassed++;
+  //     int num_sys=tf->eax;
+  //   if (num_sys == 15)
+  //  // cprintf("numsys")
+  //   {
+  //     mycpu()->weighted_syscall += 3; // Coefficient for open
+  //  //   cprintf("too rohet kargahi\n");
+  //      acquire(&syscall_struct.lock);
+  //    // acquire(syscall_c.lock)
+  //     syscall_struct.global_counter += 3;
+  //      release(&syscall_struct.lock);
+  //   }
+  //   else if (num_sys == 16)
+  //   {
+  //    mycpu()->weighted_syscall += 2; // Coefficient for write
+  //      acquire(&syscall_struct.lock);
+  //    syscall_struct.global_counter += 2;
+  //     release(&syscall_struct.lock);
+  //   }
+  //   else
+  //   {
+  //     mycpu()->weighted_syscall += 1; // Coefficient for all other calls
+  //        acquire(&syscall_struct.lock);
+  //       // cprintf("too rohet kargahi\n");
+  //     syscall_struct.global_counter += 1;
+  //    release(&syscall_struct.lock);
+  //   }
       ageProcs();
       wakeup(&ticks);
       release(&tickslock);
@@ -203,4 +239,25 @@ void trap(struct trapframe *tf)
   // Check if the process has been killed since we yielded
   if (myproc() && myproc()->killed && (tf->cs & 3) == DPL_USER)
     exit();
+}
+void print_global(){
+  cprintf("total global : %d\n",syscall_struct.global_counter);
+}
+int wrap_get_total(){
+    int total_weighted_syscalls = 0;
+
+    // // Iterate over all CPUs and sum their syscall_weight values
+    for (int i = 0; i < 4; i++) 
+      total_weighted_syscalls += cpus[i].weighted_syscall;
+    //  // cprintf(1,"total global %d")
+    // print_global();
+    // total_weighted_syscalls+=cpus[1].weighted_syscall;
+    // total_weighted_syscalls+=cpus[2].weighted_syscall;
+    // total_weighted_syscalls+=cpus[3].weighted_syscall;
+
+    // return total_weighted_syscalls;
+   // return 0;
+   cprintf("total in cores : %d \n",total_weighted_syscalls);
+   print_global();
+    return total_weighted_syscalls;
 }

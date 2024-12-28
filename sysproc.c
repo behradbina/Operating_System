@@ -161,12 +161,5 @@ int sys_set_proc_sjf_params(void)
 int
 sys_get_total_syscalls(void)
 {
-    int total_weighted_syscalls = 0;
-
-    // Iterate over all CPUs and sum their syscall_weight values
-    for (int i = 0; i < 4; i++) {
-        total_weighted_syscalls += cpus[i].weighted_syscall;
-    }
-
-    return total_weighted_syscalls;
+  return wrap_get_total();
 }

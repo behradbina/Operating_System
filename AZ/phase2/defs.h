@@ -168,6 +168,7 @@ void            timerinit(void);
 void            idtinit(void);
 extern uint     ticks;
 void            tvinit(void);
+void             init_syscall_struct(void);
 extern struct spinlock tickslock;
 
 // uart.c

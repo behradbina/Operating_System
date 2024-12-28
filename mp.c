@@ -113,6 +113,7 @@ mpinit(void)
         cpus[ncpu].fcfs = 0;
         cpus[ncpu].timePassed = 1;
         cpus[ncpu].qTypeTurn = ROUND_ROBIN;
+        cpus[ncpu].weighted_syscall=0;
         ncpu++;
       }
       p += sizeof(struct mpproc);

@@ -11,15 +11,24 @@ struct ptable_struct ptable;
 
 static struct proc *initproc;
 
+
+
 int nextpid = 1;
+int global_syscall_count = 0;
+int available=1;
+
 extern void forkret(void);
 extern void trapret(void);
 
 static void wakeup1(void *chan);
 
+
+
+
 void pinit(void)
 {
   initlock(&ptable.lock, "ptable");
+ 
 }
 
 // Must be called with interrupts disabled
@@ -1073,3 +1082,6 @@ void ageProcs()
   release(&ptable.lock);
   
 }
+// void print_global(){
+//   cprintf("global count is %d\n",syscall_c.global_counter);
+// }
