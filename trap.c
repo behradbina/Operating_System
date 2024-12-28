@@ -109,32 +109,28 @@ void trap(struct trapframe *tf)
       //update_cpu_queue();
 
       mycpu()->timePassed++;
-  //     int num_sys=tf->eax;
-  //   if (num_sys == 15)
-  //  // cprintf("numsys")
-  //   {
-  //     mycpu()->weighted_syscall += 3; // Coefficient for open
-  //  //   cprintf("too rohet kargahi\n");
-  //      acquire(&syscall_struct.lock);
-  //    // acquire(syscall_c.lock)
-  //     syscall_struct.global_counter += 3;
-  //      release(&syscall_struct.lock);
-  //   }
-  //   else if (num_sys == 16)
-  //   {
-  //    mycpu()->weighted_syscall += 2; // Coefficient for write
-  //      acquire(&syscall_struct.lock);
-  //    syscall_struct.global_counter += 2;
-  //     release(&syscall_struct.lock);
-  //   }
-  //   else
-  //   {
-  //     mycpu()->weighted_syscall += 1; // Coefficient for all other calls
-  //        acquire(&syscall_struct.lock);
-  //       // cprintf("too rohet kargahi\n");
-  //     syscall_struct.global_counter += 1;
-  //    release(&syscall_struct.lock);
-  //   }
+      int num_sys=tf->eax;
+      if (num_sys == 15)
+      {
+        mycpu()->weighted_syscall += 3; // Coefficient for open
+        acquire(&syscall_struct.lock);
+        syscall_struct.global_counter += 3;
+        release(&syscall_struct.lock);
+      }
+      else if (num_sys == 16)
+      {
+      mycpu()->weighted_syscall += 2; // Coefficient for write
+        acquire(&syscall_struct.lock);
+      syscall_struct.global_counter += 2;
+        release(&syscall_struct.lock);
+      }
+      else
+      {
+        mycpu()->weighted_syscall += 1;
+        acquire(&syscall_struct.lock);
+        syscall_struct.global_counter += 1;
+      release(&syscall_struct.lock);
+      }
       ageProcs();
       wakeup(&ticks);
       release(&tickslock);
