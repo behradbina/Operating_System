@@ -36,7 +36,7 @@ main(void)
   userinit();      // first user process
   mpmain();        // finish this processor's setup
   init_syscall_struct();
-  
+  initreentrantlock("Reentrant");
 }
 
 // Other CPUs jump here from entryother.S.

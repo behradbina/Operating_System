@@ -11,6 +11,8 @@ struct ptable_struct ptable;
 
 static struct proc *initproc;
 
+struct reentrantlock rlk; 
+
 
 
 int nextpid = 1;
@@ -1085,3 +1087,57 @@ void ageProcs()
 // void print_global(){
 //   cprintf("global count is %d\n",syscall_c.global_counter);
 // }
+
+void initreentrantlock(char *name) {
+  initlock(&(rlk.lock), name);
+  rlk.owner = 0;
+  rlk.recursion = 0;
+}
+
+void acquirereentrant() {
+  struct proc* proc = myproc();
+
+  // check if the owner has called
+  if (proc == rlk.owner) {
+    rlk.recursion++;
+    return;
+  }
+  acquire(&(rlk.lock));
+  rlk.owner = proc;
+  rlk.recursion = 1;
+}
+
+void releasereentrantlock() {
+  struct proc* proc = myproc();
+
+  // check if the owner has called
+  if (proc == rlk.owner) {
+    rlk.recursion--;
+    if (rlk.recursion > 0)
+      return;
+    release(&(rlk.lock));
+  }
+  else
+    panic("Try to release Reentrant lock by NOT the owner!\n");
+}
+
+// function to test reentrant lock
+int test_recursive_lock(int n) {
+    // end condition
+    if (!n)
+        return 0;
+
+    // aquire lock
+    acquirereentrant();  
+   
+    // recursive call and print value
+    test_recursive_lock(--n);
+   
+    // print value with pid
+    cprintf("Pid: %d, Value: %d\n", myproc()->pid, n);
+
+    // release lock
+    releasereentrantlock();
+
+    return 0;
+}

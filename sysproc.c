@@ -163,3 +163,14 @@ sys_get_total_syscalls(void)
 {
   return wrap_get_total();
 }
+
+int 
+sys_test_recursive_lock(void)
+{
+  int n;
+  if(argint(0, &n) < 0){
+    return -1;
+  }
+  test_recursive_lock(n);
+  return 0;
+}

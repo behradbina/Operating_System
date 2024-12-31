@@ -125,7 +125,8 @@ int             sort_uniqe_procces(int pid);
 int             get_max_invoked(int pid);
 int             move_file(char* path_src, char* path_des);
 int             list_all_processes_(void);
- 
+int             test_recursive_lock(int);
+
 // swtch.S
 void            swtch(struct context**, struct context*);
 

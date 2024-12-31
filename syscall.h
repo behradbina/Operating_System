@@ -31,3 +31,4 @@
 #define SYS_change_schedular_queue 30
 #define SYS_set_proc_sjf_params 31
 #define SYS_get_total_syscalls 32
+#define SYS_test_recursive_lock 33

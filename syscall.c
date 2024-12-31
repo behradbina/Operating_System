@@ -109,6 +109,7 @@ extern int sys_change_schedular_queue(void);
 extern int sys_show_process_info(void);
 extern int sys_set_proc_sjf_params(void);
 extern int sys_get_total_syscalls(void);
+extern int sys_test_recursive_lock(void);
 
 static int (*syscalls[])(void) = {
     [SYS_fork] sys_fork,
@@ -142,6 +143,7 @@ static int (*syscalls[])(void) = {
     [SYS_show_process_info] sys_show_process_info,
     [SYS_set_proc_sjf_params] sys_set_proc_sjf_params,
     [SYS_get_total_syscalls] sys_get_total_syscalls,
+    [SYS_test_recursive_lock] sys_test_recursive_lock,
 };
 
 void syscall(void)
