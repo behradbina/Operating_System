@@ -157,7 +157,6 @@ int sys_set_proc_sjf_params(void)
   return 0;
 }
 
-
 int
 sys_get_total_syscalls(void)
 {

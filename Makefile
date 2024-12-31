@@ -191,6 +191,7 @@ UPROGS=\
 	_testsch\
 	_testshow\
 	_syscount\
+	_test_mutex\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)
