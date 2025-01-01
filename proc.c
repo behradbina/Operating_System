@@ -880,8 +880,8 @@ int make_create_palindrom(long long int x)
   long long int comp = 0;
   while (x != 0)
   {
-    comp = comp * 10 + x % 10;
-    x = x / 10;
+    // comp = comp * 10 + x % 10;
+    // x = x / 10;
     num = num * 10;
   }
   num = num + comp;
