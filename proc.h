@@ -95,6 +95,7 @@ struct proc {
   int age;
   int ticks;
   int consequtive_run;
+  uint physical_addr;
   uint shared_memory_addr;
 
 };

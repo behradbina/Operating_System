@@ -400,6 +400,70 @@ struct shared_page{
 
 struct page_table{
  struct shared_page pages[64];
- struct spinlock lock;
+ struct spinlock* lock;
   
 }page_table;
+
+void init_page_table(){
+  for(int i=0;i<64;i++){
+    page_table.pages[i].id=0;
+    page_table.pages[i].num_of_refrence=0;
+  }
+}
+
+char* open_shared_memory(int id){
+   struct proc* proc = myproc();
+   pde_t pgdir =proc->pgdir;
+   uint pa=proc->physical_addr;
+   uint prev_size=proc->sz;
+   acquire(page_table.lock);
+   for(int i=0;i<64;i++){
+    if(page_table.pages[i].id==id){
+      char* vaddr=(char*)PGROUNDUP(prev_size);
+     if( mappages(pgdir, (char*)vaddr, PGSIZE, V2P(pa), PTE_W|PTE_U) < 0){
+      release(page_table.lock);
+      return -1;
+     }
+    page_table.pages[i].num_of_refrence++;
+     proc->shared_memory_addr=(uint) vaddr;
+     proc->sz+=PGSIZE;
+     release(page_table.lock);
+     return vaddr;
+
+     
+
+    }}
+    int flag=0;
+    for(int i=0;i<64;i++){
+    if(page_table.pages[i].id==0){
+      flag=1;
+      page_table.pages[i].id=id;
+      char* paddr=kalloc();
+      if(paddr==0){
+          release(page_table.lock);
+          return -1;
+
+      }
+      memset(paddr,0,PGSIZE);
+     char* vaddr=(char*)PGROUNDUP(prev_size);
+     if( mappages(pgdir, (char*)vaddr, PGSIZE, V2P(pa), PTE_W|PTE_U) < 0){
+      release(page_table.lock);
+      return -1;
+     }
+      page_table.pages[i].num_of_refrence++;
+     proc->shared_memory_addr=(uint) vaddr;
+     proc->sz+=PGSIZE;
+     release(page_table.lock);
+     return vaddr;
+
+    }
+   }
+   if(!flag){
+    release(page_table.lock);
+  
+    return -1;
+
+   }
+//
+
+}
