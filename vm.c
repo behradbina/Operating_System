@@ -392,3 +392,14 @@ copyout(pde_t *pgdir, uint va, void *p, uint len)
 //PAGEBREAK!
 // Blank page.
 
+struct shared_page{
+  int id;
+  uint physical_addr;
+  int num_of_refrence;
+}shared_page;
+
+struct page_table{
+ struct shared_page pages[64];
+ struct spinlock lock;
+  
+}page_table;
