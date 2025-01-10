@@ -425,7 +425,7 @@ char* open_shared_memory(int id){
       release(pg_table_shared.lock);
       return -1;
      }
-    //pg_table_shared.pages[i].num_of_refrence++;
+    pg_table_shared.pages[i].num_of_refrence++;
      proc->shared_memory_addr=(uint) vaddr;
      proc->sz+=PGSIZE;
      release(pg_table_shared.lock);
