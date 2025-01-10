@@ -173,3 +173,14 @@ sys_test_recursive_lock(void)
   test_recursive_lock(n);
   return 0;
 }
+char* 
+sys_opensharedmem(void)
+{
+  int n;
+  if(argint(0, &n) < 0){
+    return -1;
+  }
+  return  open_shared_memory(n);
+ // return 0;
+}
+
