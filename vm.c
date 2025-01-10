@@ -398,17 +398,17 @@ struct shared_page{
   int num_of_refrence;
 }shared_page;
 
-struct page_table{
+struct pg_table_shared{
  struct shared_page pages[64];
  struct spinlock* lock;
   
-}page_table;
+}pg_table_shared;
 
-void init_page_table_shared(){
-  initlock(&page_table.lock,"page_table");
+void init_pg_table_shared_shared(){
+  initlock(&pg_table_shared.lock,"pg_table_shared");
   for(int i=0;i<64;i++){
-    page_table.pages[i].id=0;
-    page_table.pages[i].num_of_refrence=0;
+    pg_table_shared.pages[i].id=0;
+    pg_table_shared.pages[i].num_of_refrence=0;
   }
 }
 
@@ -417,18 +417,18 @@ char* open_shared_memory(int id){
    pde_t pgdir =proc->pgdir;
    uint pa=proc->physical_addr;
    uint prev_size=proc->sz;
-   acquire(page_table.lock);
+   acquire(pg_table_shared.lock);
    for(int i=0;i<64;i++){
-    if(page_table.pages[i].id==id){
+    if(pg_table_shared.pages[i].id==id){
       char* vaddr=(char*)PGROUNDUP(prev_size);
      if( mappages(pgdir, (char*)vaddr, PGSIZE, V2P(pa), PTE_W|PTE_U) < 0){
-      release(page_table.lock);
+      release(pg_table_shared.lock);
       return -1;
      }
-    page_table.pages[i].num_of_refrence++;
+    //pg_table_shared.pages[i].num_of_refrence++;
      proc->shared_memory_addr=(uint) vaddr;
      proc->sz+=PGSIZE;
-     release(page_table.lock);
+     release(pg_table_shared.lock);
      return vaddr;
 
      
@@ -436,31 +436,31 @@ char* open_shared_memory(int id){
     }}
     int flag=0;
     for(int i=0;i<64;i++){
-    if(page_table.pages[i].id==0){
+    if(pg_table_shared.pages[i].id==0){
       flag=1;
-      page_table.pages[i].id=id;
+      pg_table_shared.pages[i].id=id;
       char* paddr=kalloc();
       if(paddr==0){
-          release(page_table.lock);
+          release(pg_table_shared.lock);
           return -1;
 
       }
       memset(paddr,0,PGSIZE);
      char* vaddr=(char*)PGROUNDUP(prev_size);
      if( mappages(pgdir, (char*)vaddr, PGSIZE, V2P(pa), PTE_W|PTE_U) < 0){
-      release(page_table.lock);
+      release(pg_table_shared.lock);
       return -1;
      }
-      page_table.pages[i].num_of_refrence++;
+      pg_table_shared.pages[i].num_of_refrence++;
      proc->shared_memory_addr=(uint) vaddr;
      proc->sz+=PGSIZE;
-     release(page_table.lock);
+     release(pg_table_shared.lock);
      return vaddr;
 
     }
    }
    if(!flag){
-    release(page_table.lock);
+    release(pg_table_shared.lock);
   
     return -1;
 
@@ -475,19 +475,19 @@ int close_shared_memory(int id){
    uint pa=proc->physical_addr;
    uint prev_size=proc->sz;
    uint shared_memory_add=proc->shared_memory_addr;
-   acquire(page_table.lock);
+   acquire(pg_table_shared.lock);
    for(int i=0;i<64;i++){
-    if(page_table.pages[i].id==id){
-      if (page_table.pages[i].num_of_refrence>0){
-        page_table.pages[i].num_of_refrence--;
+    if(pg_table_shared.pages[i].id==id){
+      if (pg_table_shared.pages[i].num_of_refrence>0){
+        pg_table_shared.pages[i].num_of_refrence--;
       }
        char* vaddr=(char*)PGROUNDUP(shared_memory_add);
-       pte_t* page_table_entry=walkpgdir(pgdir,(char*)vaddr,0);
-       page_table_entry=0;
-       if(page_table.pages[i].num_of_refrence==0){
-        page_table.pages[i].id=0;
+       pte_t* pg_table_shared_entry=walkpgdir(pgdir,(char*)vaddr,0);
+       pg_table_shared_entry=0;
+       if(pg_table_shared.pages[i].num_of_refrence==0){
+        pg_table_shared.pages[i].id=0;
        }
-       release(page_table.lock);
+       release(pg_table_shared.lock);
        return 0;
    
 
@@ -495,7 +495,7 @@ int close_shared_memory(int id){
 
     }}
 
-    release(page_table.lock);
+    release(pg_table_shared.lock);
     cprintf("ID not found\n");
     return 0;
    
