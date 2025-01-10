@@ -33,3 +33,4 @@
 #define SYS_get_total_syscalls 32
 #define SYS_test_recursive_lock 33
 #define SYS_opensharedmem 34
+#define SYS_closesharedmem 35

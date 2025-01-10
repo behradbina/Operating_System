@@ -111,6 +111,7 @@ extern int sys_set_proc_sjf_params(void);
 extern int sys_get_total_syscalls(void);
 extern int sys_test_recursive_lock(void);
 extern char* sys_opensharedmem(void);
+extern char* sys_closesharedmem(void);
 static int (*syscalls[])(void) = {
     [SYS_fork] sys_fork,
     [SYS_exit] sys_exit,
@@ -145,6 +146,7 @@ static int (*syscalls[])(void) = {
     [SYS_get_total_syscalls] sys_get_total_syscalls,
     [SYS_test_recursive_lock] sys_test_recursive_lock,
     [SYS_opensharedmem] sys_opensharedmem,
+    [SYS_closesharedmem] sys_closesharedmem,
 };
 
 void syscall(void)

@@ -184,3 +184,14 @@ sys_opensharedmem(void)
  // return 0;
 }
 
+int 
+  sys_closesharedmem(void)
+{
+  int n;
+  if(argint(0, &n) < 0){
+    return -1;
+  }
+  return  close_shared_memory(n);
+ // return 0;
+}
+
