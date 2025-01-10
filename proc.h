@@ -95,6 +95,8 @@ struct proc {
   int age;
   int ticks;
   int consequtive_run;
+  uint shared_memory_addr;
+
 };
  
 // Process memory is laid out contiguously, low addresses first:
