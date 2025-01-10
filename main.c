@@ -37,6 +37,7 @@ main(void)
   mpmain();        // finish this processor's setup
   init_syscall_struct();
   initreentrantlock("Reentrant");
+  init_page_table_shared();
 }
 
 // Other CPUs jump here from entryother.S.

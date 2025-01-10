@@ -404,7 +404,8 @@ struct page_table{
   
 }page_table;
 
-void init_page_table(){
+void init_page_table_shared(){
+  initlock(&page_table.lock,"page_table");
   for(int i=0;i<64;i++){
     page_table.pages[i].id=0;
     page_table.pages[i].num_of_refrence=0;
@@ -465,5 +466,38 @@ char* open_shared_memory(int id){
 
    }
 //
+
+}
+
+int close_shared_memory(int id){
+   struct proc* proc = myproc();
+   pde_t pgdir =proc->pgdir;
+   uint pa=proc->physical_addr;
+   uint prev_size=proc->sz;
+   uint shared_memory_add=proc->shared_memory_addr;
+   acquire(page_table.lock);
+   for(int i=0;i<64;i++){
+    if(page_table.pages[i].id==id){
+      if (page_table.pages[i].num_of_refrence>0){
+        page_table.pages[i].num_of_refrence--;
+      }
+       char* vaddr=(char*)PGROUNDUP(shared_memory_add);
+       pte_t* page_table_entry=walkpgdir(pgdir,(char*)vaddr,0);
+       page_table_entry=0;
+       if(page_table.pages[i].num_of_refrence==0){
+        page_table.pages[i].id=0;
+       }
+       release(page_table.lock);
+       return 0;
+   
+
+     
+
+    }}
+
+    release(page_table.lock);
+    cprintf("ID not found\n");
+    return 0;
+   
 
 }
