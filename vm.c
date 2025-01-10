@@ -404,7 +404,7 @@ struct pg_table_shared{
   
 }pg_table_shared;
 
-void init_pg_table_shared_shared(){
+void init_pg_table_shared(){
   initlock(&pg_table_shared.lock,"pg_table_shared");
   for(int i=0;i<64;i++){
     pg_table_shared.pages[i].id=0;
