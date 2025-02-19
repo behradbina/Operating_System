@@ -1,20 +1,20 @@
-#xv6 operating system optimization
+# xv6 operating system optimization
 
 xv6 is a re-implementation of Dennis Ritchie's and Ken Thompson's Unix Version 6 (v6).  xv6 loosely follows the structure and style of v6, but is implemented for a modern x86-based multiprocessor using ANSI C.
 
 In this repository we had 5 phases to reach the better version of xv6 operating system.
 
-##phase 1 :
+## phase 1 :
 
-##phase 2 :
-##phase 3 : Optimization of Scheduling Algorithm 
-##phase 4 : 
-##phase 5 : 
+## phase 2 :
+## phase 3 : Optimization of Scheduling Algorithm 
+## phase 4 : 
+## phase 5 : 
 
 
 The following people have made contributions: Mehrad Livian & Marzieh Mousavi
 
-##BUILDING AND RUNNING XV6
+## BUILDING AND RUNNING XV6
 To build xv6 on an x86 ELF machine (like Linux or FreeBSD), run
 "make". On non-x86 or non-ELF machines (like OS X, even on x86), you
 will need to install a cross-compiler gcc suite capable of producing
