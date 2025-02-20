@@ -1,7 +1,3 @@
-Got it! Here's the updated **README.md**, now including **Phase 2** with detailed descriptions of the new system calls. 🚀  
-
----
-
 # 🚀 xv6 Operating System Optimization  
 
 xv6 is a modern re-implementation of Unix Version 6 (v6), originally designed by **Dennis Ritchie** and **Ken Thompson**. While xv6 preserves the simplicity of its ancestor, our goal in this project was to **enhance and optimize its functionality** to create a more efficient and user-friendly version.  
